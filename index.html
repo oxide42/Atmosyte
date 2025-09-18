@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Terrassevejret</title>
+        <link rel="stylesheet" href="css/styles.css" />
+        <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+        <script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
+        <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+    </head>
+    <body>
+        <div class="container">
+            <nav class="navbar">
+                <div class="nav-title">
+                    <h1>Terrassevejret</h1>
+                    <div id="locationName" class="location-name">
+                        Loading location...
+                    </div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button id="settingsBtn" class="settings-btn">⚙️</button>
+                </div>
+            </nav>
+
+            <main id="mainPage" class="page active">
+                <div id="chartContainer" class="chart-container"></div>
+            </main>
+
+            <div id="settingsPage" class="page">
+                <h2>Settings</h2>
+
+                <div class="setting-group">
+                    <label for="weatherProvider">Weather Provider:</label>
+                    <select id="weatherProvider">
+                        <option value="openweathermap">OpenWeatherMap</option>
+                        <option value="dmi">
+                            DMI (Danmarks Meteorologiske Institut)
+                        </option>
+                    </select>
+                </div>
+
+                <div class="setting-group">
+                    <label for="owmApiToken">OpenWeatherMap API Token:</label>
+                    <input
+                        type="text"
+                        id="owmApiToken"
+                        placeholder="Enter your OpenWeatherMap API token"
+                    />
+                </div>
+
+                <div class="setting-group">
+                    <label for="dmiApiToken">DMI API Token:</label>
+                    <input
+                        type="text"
+                        id="dmiApiToken"
+                        placeholder="Enter your DMI API token"
+                    />
+                </div>
+
+                <div class="setting-group">
+                    <label for="tempUnit">Temperature Unit:</label>
+                    <select id="tempUnit">
+                        <option value="celsius">Celsius (°C)</option>
+                        <option value="fahrenheit">Fahrenheit (°F)</option>
+                    </select>
+                </div>
+
+                <div class="setting-group">
+                    <label for="windUnit">Wind Speed Unit:</label>
+                    <select id="windUnit">
+                        <option value="ms">m/s</option>
+                        <option value="kmh">km/h</option>
+                        <option value="mph">mph</option>
+                        <option value="knots">knots</option>
+                    </select>
+                </div>
+
+                <div class="setting-group">
+                    <label for="locationCacheMinutes"
+                        >Location Cache Duration (minutes):</label
+                    >
+                    <input
+                        type="number"
+                        id="locationCacheMinutes"
+                        min="1"
+                        max="1440"
+                        value="30"
+                        placeholder="30"
+                    />
+                </div>
+
+                <button id="saveSettings" class="save-btn">
+                    Save Settings
+                </button>
+            </div>
+        </div>
+
+        <script src="js/settings.js"></script>
+        <script src="js/locationService.js"></script>
+        <script src="js/sunService.js"></script>
+        <script src="js/chart.js"></script>
+        <script src="js/provider-openweathermap.js"></script>
+        <script src="js/provider-dmi.js"></script>
+        <script src="js/weather.js"></script>
+        <script src="js/app.js"></script>
+    </body>
+</html>
