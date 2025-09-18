@@ -42,10 +42,6 @@ class WeatherChart {
     let tempExtremas = this.findLocalExtrema(weatherData, "temperature");
     let windExtremas = this.findLocalExtrema(weatherData, "windSpeed");
 
-    // Smooth extrema data points
-    tempExtremas = this.smoothExtremas(tempExtremas);
-    windExtremas = this.smoothExtremas(windExtremas);
-
     const chartData = this.prepareChartData(processedData);
 
     this.setSeriesData(
@@ -274,7 +270,10 @@ class WeatherChart {
     windExtremas,
     processedData,
   ) {
-    const addBullet = (targetSeries, extremaIndex, value) => {
+    this.labelPositions = [];
+    this.visibleLabels = [];
+
+    const addBullet = (targetSeries, extremaIndex, value, labelType) => {
       var seriesDataItem = targetSeries.dataItems[extremaIndex];
 
       if (seriesDataItem) {
@@ -297,15 +296,29 @@ class WeatherChart {
             centerX: am5.p50,
             centerY: am5.p100,
             dx: 10,
+            dy: 0,
           }),
         );
 
-        targetSeries.addBullet(
-          seriesDataItem,
-          am5.Bullet.new(root, {
-            sprite: bullet,
-          }),
-        );
+        const bulletSprite = am5.Bullet.new(root, {
+          sprite: bullet,
+        });
+
+        targetSeries.addBullet(seriesDataItem, bulletSprite);
+
+        // Store label info for collision detection
+        const labelInfo = {
+          bullet: bullet,
+          label: label,
+          extremaIndex: extremaIndex,
+          value: value,
+          labelType: labelType,
+          originalDy: 0,
+          visible: true,
+        };
+
+        this.labelPositions.push(labelInfo);
+        this.visibleLabels.push(labelInfo);
       }
     };
 
@@ -321,14 +334,14 @@ class WeatherChart {
             processedData[extrema.index].temperature,
           );
           const formattedValue = roundedValue + "°";
-          addBullet(tempSeries, extrema.index, formattedValue);
+          addBullet(tempSeries, extrema.index, formattedValue, "temperature");
         });
         tempExtremas.minima.forEach((extrema) => {
           const roundedValue = Math.round(
             processedData[extrema.index].temperature,
           );
           const formattedValue = roundedValue + "°";
-          addBullet(tempSeries, extrema.index, formattedValue);
+          addBullet(tempSeries, extrema.index, formattedValue, "temperature");
         });
 
         // Add wind bullets
@@ -337,15 +350,25 @@ class WeatherChart {
             processedData[extrema.index].windSpeed,
           );
           const formattedValue = roundedValue + "m/s";
-          addBullet(windSeries, extrema.index, formattedValue);
+          addBullet(windSeries, extrema.index, formattedValue, "wind");
         });
         windExtremas.minima.forEach((extrema) => {
           const roundedValue = Math.round(
             processedData[extrema.index].windSpeed,
           );
           const formattedValue = roundedValue + "m/s";
-          addBullet(windSeries, extrema.index, formattedValue);
+          addBullet(windSeries, extrema.index, formattedValue, "wind");
         });
+
+        // Handle label collisions after all bullets are added
+        setTimeout(() => {
+          this.handleLabelCollisions(
+            root,
+            tempSeries,
+            windSeries,
+            processedData,
+          );
+        }, 100);
       }
     };
 
@@ -360,10 +383,321 @@ class WeatherChart {
     });
   }
 
+  handleLabelCollisions(root, tempSeries, windSeries, processedData) {
+    if (!this.labelPositions.length) return;
+
+    // Sort labels by x position for efficient collision detection
+    const sortedLabels = [...this.labelPositions].sort(
+      (a, b) => a.extremaIndex - b.extremaIndex,
+    );
+
+    // Apply collision detection and repositioning
+    for (let i = 0; i < sortedLabels.length; i++) {
+      const currentLabel = sortedLabels[i];
+
+      if (!currentLabel.visible) continue;
+
+      // Check for collisions with subsequent labels
+      for (let j = i + 1; j < sortedLabels.length; j++) {
+        const nextLabel = sortedLabels[j];
+
+        if (!nextLabel.visible) continue;
+
+        // Calculate distance between labels
+        const indexDistance = Math.abs(
+          nextLabel.extremaIndex - currentLabel.extremaIndex,
+        );
+
+        // If labels are too close, apply repositioning or hiding
+        if (indexDistance < 4) {
+          this.repositionCollidingLabels(currentLabel, nextLabel, root);
+        }
+      }
+    }
+  }
+
+  repositionCollidingLabels(label1, label2, root) {
+    // Get the actual Y values for the labels to determine which is higher/lower
+    const label1YValue = this.getLabelYValue(label1);
+    const label2YValue = this.getLabelYValue(label2);
+
+    // Determine which label is topmost (higher Y value = lower on screen in chart coordinates)
+    const topmostLabel = label1YValue >= label2YValue ? label1 : label2;
+    const bottommostLabel = label1YValue >= label2YValue ? label2 : label1;
+
+    // Move topmost label up (negative offset) and bottommost label down (positive offset)
+    const upwardOffset = -40;
+    const downwardOffset = 40;
+
+    let repositioned = false;
+
+    // Try to reposition both labels
+    if (!this.checkCollisionAtOffset(topmostLabel, upwardOffset)) {
+      this.applyLabelOffset(topmostLabel, upwardOffset);
+      this.applyLabelOffset(bottommostLabel, downwardOffset);
+      repositioned = true;
+    }
+
+    if (!this.checkCollisionAtOffset(bottommostLabel, downwardOffset)) {
+      this.applyLabelOffset(bottommostLabel, downwardOffset);
+      this.applyLabelOffset(topmostLabel, upwardOffset);
+      repositioned = true;
+    }
+
+    // Last resort: hide the lower priority label (temperature has priority over wind)
+    /*
+    if (!repositioned) {
+      const priority1 = topmostLabel.labelType === "temperature" ? 1 : 0;
+      const priority2 = bottommostLabel.labelType === "temperature" ? 1 : 0;
+      const lowerPriorityLabel =
+        priority1 > priority2 ? bottommostLabel : topmostLabel;
+      this.hideLabelConditionally(lowerPriorityLabel);
+    }
+    */
+  }
+
+  getLabelYValue(labelInfo) {
+    // Get the data point value to determine vertical position
+    const dataIndex = labelInfo.extremaIndex;
+    if (labelInfo.labelType === "temperature") {
+      return parseFloat(labelInfo.value.replace("°", "")); // Remove degree symbol and convert to number
+    } else {
+      return parseFloat(labelInfo.value.replace("m/s", "")); // Remove unit and convert to number
+    }
+  }
+
+  checkCollisionAtOffset(label, dyOffset) {
+    // Check if this position would collide with other visible labels
+    for (const otherLabel of this.visibleLabels) {
+      if (otherLabel === label) continue;
+
+      const indexDistance = Math.abs(
+        otherLabel.extremaIndex - label.extremaIndex,
+      );
+      const verticalDistance = Math.abs(otherLabel.originalDy - dyOffset);
+
+      if (indexDistance < 4 && verticalDistance < 20) {
+        return true; // Collision detected
+      }
+    }
+    return false;
+  }
+
+  applyLabelOffset(labelInfo, dyOffset) {
+    labelInfo.originalDy = dyOffset;
+    labelInfo.label.set("dy", dyOffset);
+
+    // Add adaptive positioning based on chart bounds using adapters
+    labelInfo.label.adapters.add("dy", (value, target) => {
+      try {
+        // Simple bounds checking without relying on complex parent hierarchy
+        if (value < -60) {
+          return -60;
+        }
+        if (value > 60) {
+          return 60;
+        }
+      } catch (e) {
+        // Fallback to simple bounds if there's any error
+        if (value < -60) return -60;
+        if (value > 60) return 60;
+      }
+      return value;
+    });
+
+    // Adjust anchor point based on offset direction
+    if (dyOffset < -30) {
+      labelInfo.label.set("centerY", am5.p0); // Position above
+      labelInfo.label.set("dx", -10); // Slight horizontal adjustment
+    } else if (dyOffset > 30) {
+      labelInfo.label.set("centerY", am5.p100); // Position below
+      labelInfo.label.set("dx", 10); // Slight horizontal adjustment
+    }
+  }
+
+  hideLabelConditionally(labelInfo) {
+    labelInfo.visible = false;
+    labelInfo.label.set("visible", false);
+
+    // Remove from visible labels tracking
+    const index = this.visibleLabels.indexOf(labelInfo);
+    if (index > -1) {
+      this.visibleLabels.splice(index, 1);
+    }
+  }
+
   setupChartEvents(chart, xAxis) {
     chart.events.on("ready", () => {
       xAxis.zoom(0, 0.05);
     });
+
+    // Recalculate label positions on zoom changes
+    xAxis.events.on("selectionchanged", () => {
+      if (this.labelPositions && this.labelPositions.length > 0) {
+        setTimeout(() => {
+          this.recalculateLabelVisibility(xAxis);
+        }, 50);
+      }
+    });
+  }
+
+  recalculateLabelVisibility(xAxis) {
+    const zoomStart = xAxis.zoom;
+    const zoomEnd = xAxis.zoomEnd || 1;
+    const visibleRange = zoomEnd - zoomStart;
+
+    // Reset all labels to visible first
+    this.labelPositions.forEach((labelInfo) => {
+      if (labelInfo.visible === false) {
+        labelInfo.visible = true;
+        labelInfo.label.set("visible", true);
+        labelInfo.label.set("dy", labelInfo.originalDy || 0);
+      }
+    });
+
+    // Apply conditional visibility based on zoom level
+    if (visibleRange < 0.1) {
+      // High zoom - show more labels with repositioning
+      this.applyHighZoomLabelStrategy();
+    } else if (visibleRange < 0.3) {
+      // Medium zoom - moderate label density
+      this.applyMediumZoomLabelStrategy();
+    } else {
+      // Low zoom - show only most important labels
+      this.applyLowZoomLabelStrategy();
+    }
+  }
+
+  applyHighZoomLabelStrategy() {
+    // Show all labels with aggressive repositioning
+    const sortedLabels = [...this.labelPositions].sort(
+      (a, b) => a.extremaIndex - b.extremaIndex,
+    );
+    for (let i = 0; i < sortedLabels.length - 1; i++) {
+      const current = sortedLabels[i];
+      const next = sortedLabels[i + 1];
+      const distance = Math.abs(next.extremaIndex - current.extremaIndex);
+
+      if (distance < 3) {
+        this.applyLabelOffset(next, i % 2 === 0 ? -30 : 30);
+      }
+    }
+  }
+
+  applyMediumZoomLabelStrategy() {
+    // Show labels with moderate filtering
+    const sortedLabels = [...this.labelPositions].sort(
+      (a, b) => a.extremaIndex - b.extremaIndex,
+    );
+    for (let i = 0; i < sortedLabels.length - 1; i++) {
+      const current = sortedLabels[i];
+      const next = sortedLabels[i + 1];
+      const distance = Math.abs(next.extremaIndex - current.extremaIndex);
+
+      if (distance < 4) {
+        if (current.labelType === "temperature") {
+          this.hideLabelConditionally(next);
+        } else {
+          this.hideLabelConditionally(current);
+        }
+      }
+    }
+  }
+
+  applyLowZoomLabelStrategy() {
+    // Show only high-priority labels with significant spacing
+    const tempLabels = this.labelPositions.filter(
+      (l) => l.labelType === "temperature",
+    );
+    const windLabels = this.labelPositions.filter(
+      (l) => l.labelType === "wind",
+    );
+
+    // Keep only temperature labels that are far apart
+    for (let i = 1; i < tempLabels.length; i++) {
+      const distance = Math.abs(
+        tempLabels[i].extremaIndex - tempLabels[i - 1].extremaIndex,
+      );
+      if (distance < 8) {
+        this.hideLabelConditionally(tempLabels[i]);
+      }
+    }
+
+    // Hide most wind labels in low zoom
+    windLabels.forEach((label, index) => {
+      if (index % 2 === 1) {
+        this.hideLabelConditionally(label);
+      }
+    });
+  }
+
+  findLocalExtrema(timeSeries, property) {
+    //return this.smoothExtremas(this.extremaSimple(timeSeries, property));
+
+    const dataPoints = [];
+    for (let i = 0; i < timeSeries.length; i++) {
+      dataPoints.push(timeSeries[i][property]);
+    }
+
+    return this.findExtremaByProminence(dataPoints);
+  }
+
+  findExtremaByProminence(data, minProminence = 0.3) {
+    const maxima = [];
+    const minima = [];
+
+    for (let i = 1; i < data.length - 1; i++) {
+      // Check for maximum
+      if (data[i] > data[i - 1] && data[i] > data[i + 1]) {
+        const prominence = this.calculateProminence(data, i, "max");
+        if (prominence >= minProminence) {
+          maxima.push({ index: i, prominence, height: data[i] });
+        }
+      }
+      // Check for minimum
+      else if (data[i] < data[i - 1] && data[i] < data[i + 1]) {
+        const prominence = this.calculateProminence(data, i, "min");
+        if (prominence >= minProminence) {
+          minima.push({ index: i, prominence, height: data[i] });
+        }
+      }
+    }
+
+    return { maxima, minima };
+  }
+
+  calculateProminence(data, peakIndex, type) {
+    if (type === "max") {
+      // For maxima: find lowest points on either side
+      let leftBase = data[peakIndex];
+      for (let j = peakIndex - 1; j >= 0; j--) {
+        if (data[j] <= data[j + 1]) leftBase = Math.min(leftBase, data[j]);
+        else break;
+      }
+
+      let rightBase = data[peakIndex];
+      for (let j = peakIndex + 1; j < data.length; j++) {
+        if (data[j] <= data[j - 1]) rightBase = Math.min(rightBase, data[j]);
+        else break;
+      }
+
+      return data[peakIndex] - Math.max(leftBase, rightBase);
+    } else {
+      // For minima: find highest points on either side
+      let leftBase = data[peakIndex];
+      for (let j = peakIndex - 1; j >= 0; j--) {
+        if (data[j] >= data[j + 1]) leftBase = Math.max(leftBase, data[j]);
+        else break;
+      }
+
+      let rightBase = data[peakIndex];
+      for (let j = peakIndex + 1; j < data.length; j++) {
+        if (data[j] >= data[j - 1]) rightBase = Math.max(rightBase, data[j]);
+        else break;
+      }
+
+      return Math.min(leftBase, rightBase) - data[peakIndex];
+    }
   }
 
   extremaSimple(timeSeries, property) {
@@ -398,11 +732,10 @@ class WeatherChart {
       }
     }
 
-    return { minima, maxima };
-  }
-
-  findLocalExtrema(timeSeries, property) {
-    return this.extremaSimple(timeSeries, property);
+    return {
+      minima: minima,
+      maxima: maxima,
+    };
   }
 
   smoothExtremas(extremas) {
