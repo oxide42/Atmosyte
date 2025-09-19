@@ -632,75 +632,7 @@ class WeatherChart {
   }
 
   findLocalExtrema(timeSeries, property) {
-    //return this.smoothExtremas(this.extremaSimple(timeSeries, property));
-
-    const dataPoints = [];
-    for (let i = 0; i < timeSeries.length; i++) {
-      dataPoints.push(timeSeries[i][property]);
-    }
-
-    return this.findExtremaByProminence(dataPoints);
-  }
-
-  findExtremaByProminence(data, minProminence = 0.3) {
-    const maxima = [];
-    const minima = [];
-
-    for (let i = 1; i < data.length - 1; i++) {
-      // Check for maximum
-      if (data[i] > data[i - 1] && data[i] > data[i + 1]) {
-        const prominence = this.calculateProminence(data, i, "max");
-        if (prominence >= minProminence) {
-          maxima.push({ index: i, prominence, height: data[i] });
-        }
-      }
-      // Check for minimum
-      else if (data[i] < data[i - 1] && data[i] < data[i + 1]) {
-        const prominence = this.calculateProminence(data, i, "min");
-        if (prominence >= minProminence) {
-          minima.push({ index: i, prominence, height: data[i] });
-        }
-      }
-    }
-
-    return {
-      maxima: this.filterGroups(minima, false),
-      minima: this.filterGroups(maxima, true),
-    };
-  }
-
-  calculateProminence(data, peakIndex, type) {
-    if (type === "max") {
-      // For maxima: find lowest points on either side
-      let leftBase = data[peakIndex];
-      for (let j = peakIndex - 1; j >= 0; j--) {
-        if (data[j] <= data[j + 1]) leftBase = Math.min(leftBase, data[j]);
-        else break;
-      }
-
-      let rightBase = data[peakIndex];
-      for (let j = peakIndex + 1; j < data.length; j++) {
-        if (data[j] <= data[j - 1]) rightBase = Math.min(rightBase, data[j]);
-        else break;
-      }
-
-      return data[peakIndex] - Math.max(leftBase, rightBase);
-    } else {
-      // For minima: find highest points on either side
-      let leftBase = data[peakIndex];
-      for (let j = peakIndex - 1; j >= 0; j--) {
-        if (data[j] >= data[j + 1]) leftBase = Math.max(leftBase, data[j]);
-        else break;
-      }
-
-      let rightBase = data[peakIndex];
-      for (let j = peakIndex + 1; j < data.length; j++) {
-        if (data[j] >= data[j - 1]) rightBase = Math.max(rightBase, data[j]);
-        else break;
-      }
-
-      return Math.min(leftBase, rightBase) - data[peakIndex];
-    }
+    return this.smoothExtremas(this.extremaSimple(timeSeries, property));
   }
 
   extremaSimple(timeSeries, property) {
@@ -718,19 +650,11 @@ class WeatherChart {
       const point = { index: i, value: current, time: timeSeries[i].time };
 
       // Check for maximum
-      if (
-        current >= prev &&
-        current >= next &&
-        (i === 0 || i === length - 1 || current > prev || current > next)
-      ) {
+      if (current >= prev && current > next) {
         maxima.push(point);
       }
       // Check for minimum
-      else if (
-        current <= prev &&
-        current <= next &&
-        (i === 0 || i === length - 1 || current < prev || current < next)
-      ) {
+      else if (current <= prev && current < next) {
         minima.push(point);
       }
     }
@@ -742,43 +666,76 @@ class WeatherChart {
   }
 
   smoothExtremas(extremas) {
-    return {
-      minima: this.filterGroups(extremas.minima, true),
-      maxima: this.filterGroups(extremas.maxima, false),
-    };
+    return this.filterExtremasCombined(extremas);
   }
 
-  filterGroups(extrema, isMinima) {
-    if (!extrema.length) return [];
+  filterExtremasCombined(extremas) {
+    const allExtremas = [
+      ...extremas.minima.map((e) => ({ ...e, type: "minimum" })),
+      ...extremas.maxima.map((e) => ({ ...e, type: "maximum" })),
+    ];
 
-    const indexDistanceThreshold = 3;
-    const valueThreshold = 0.3;
+    if (!allExtremas.length) return { minima: [], maxima: [] };
+
+    // Sort by index to process chronologically
+    allExtremas.sort((a, b) => a.index - b.index);
+
+    const indexDistanceThreshold = 2;
+    const valueThresholdPct = 0.2;
+    const valueThresholdValue = 1;
 
     const result = [];
-    let currentGroupPeak = extrema[0];
+    let currentGroupPeak = allExtremas[0];
 
-    for (let i = 1; i < extrema.length; i++) {
-      const { index: currIdx, value: currVal } = extrema[i];
-      const { index: prevIdx, value: prevVal } = extrema[i - 1];
+    for (let i = 1; i < allExtremas.length; i++) {
+      const { index: currIdx, value: currVal } = allExtremas[i];
+      const { index: prevIdx, value: prevVal } = allExtremas[i - 1];
 
       const isCloseInIndex = currIdx - prevIdx <= indexDistanceThreshold;
-      const isCloseInValue =
-        Math.abs((currVal - prevVal) / currVal) <= valueThreshold;
+      let isCloseInValue =
+        Math.abs(
+          (currVal - prevVal) / Math.max(Math.abs(currVal), Math.abs(prevVal)),
+        ) <= valueThresholdPct;
+      if (Math.abs(currVal - prevVal) < valueThresholdValue)
+        isCloseInValue = true;
 
       if (isCloseInIndex && isCloseInValue) {
         // Keep more extreme value within the group
-        const isMoreExtreme = isMinima
-          ? currVal < currentGroupPeak.value
-          : currVal > currentGroupPeak.value;
+        // For mixed types, prefer the one with more extreme absolute deviation from average
+        const avgValue = (currVal + prevVal) / 2;
+        const currDeviation = Math.abs(currVal - avgValue);
+        const prevDeviation = Math.abs(currentGroupPeak.value - avgValue);
 
-        if (isMoreExtreme) currentGroupPeak = extrema[i];
+        if (currDeviation > prevDeviation) {
+          currentGroupPeak = allExtremas[i];
+        }
       } else {
         result.push(currentGroupPeak);
-        currentGroupPeak = extrema[i];
+        currentGroupPeak = allExtremas[i];
       }
     }
     result.push(currentGroupPeak);
-    return result;
+
+    // Separate back into minima and maxima
+    const filteredMinima = result
+      .filter((e) => e.type === "minimum")
+      .map((e) => ({
+        index: e.index,
+        value: e.value,
+        time: e.time,
+      }));
+    const filteredMaxima = result
+      .filter((e) => e.type === "maximum")
+      .map((e) => ({
+        index: e.index,
+        value: e.value,
+        time: e.time,
+      }));
+
+    return {
+      minima: filteredMinima,
+      maxima: filteredMaxima,
+    };
   }
 
   dispose() {
