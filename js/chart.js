@@ -428,8 +428,8 @@ class WeatherChart {
     const bottommostLabel = label1YValue >= label2YValue ? label2 : label1;
 
     // Move topmost label up (negative offset) and bottommost label down (positive offset)
-    const upwardOffset = -40;
-    const downwardOffset = 40;
+    const upwardOffset = 0;
+    const downwardOffset = 0;
 
     let repositioned = false;
 
