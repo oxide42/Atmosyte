@@ -491,18 +491,11 @@ class WeatherChart {
 
     // Add adaptive positioning based on chart bounds using adapters
     labelInfo.label.adapters.add("dy", (value, target) => {
-      try {
-        // Simple bounds checking without relying on complex parent hierarchy
-        if (value < -60) {
-          return -60;
-        }
-        if (value > 60) {
-          return 60;
-        }
-      } catch (e) {
-        // Fallback to simple bounds if there's any error
-        if (value < -60) return -60;
-        if (value > 60) return 60;
+      if (value < -60) {
+        return -60;
+      }
+      if (value > 60) {
+        return 60;
       }
       return value;
     });
@@ -535,6 +528,7 @@ class WeatherChart {
       xAxis.zoom(0, 0.05);
     });
 
+    /*
     xAxis.onPrivate("selectionMin", function (value, target) {
       if (self.labelPositions && self.labelPositions.length > 0) {
         setTimeout(() => {
@@ -542,6 +536,7 @@ class WeatherChart {
         }, 50);
       }
     });
+    */
   }
 
   recalculateLabelVisibility(xAxis) {
@@ -557,6 +552,8 @@ class WeatherChart {
         labelInfo.label.set("dy", labelInfo.originalDy || 0);
       }
     });
+
+    console.log("Visible range: " + visibleRange);
 
     // Apply conditional visibility based on zoom level
     if (visibleRange < 0.1) {
