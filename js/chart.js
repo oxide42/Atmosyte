@@ -176,7 +176,7 @@ class WeatherChart {
       fill: am5.color(0x0000aa),
       stroke: am5.color(0x0000ff),
       width: am5.percent(100),
-      opacity: 1,
+      opacity: 0.8,
     });
 
     return precipSeries;
