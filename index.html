@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Terrassevejret</title>
+        <title>Nimbus</title>
         <link rel="stylesheet" href="css/styles.css" />
         <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
         <script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
@@ -13,7 +13,7 @@
         <div class="container">
             <nav class="navbar">
                 <div class="nav-title">
-                    <h1>Terrassevejret</h1>
+                    <h1>Nimbus</h1>
                     <div id="locationName" class="location-name">
                         Loading location...
                     </div>
@@ -57,6 +57,17 @@
                         id="dmiApiToken"
                         placeholder="Enter your DMI API token"
                     />
+                </div>
+
+                <div class="setting-group">
+                    <label for="owmForecastType"
+                        >OpenWeatherMap Forecast Type:</label
+                    >
+                    <select id="owmForecastType">
+                        <option value="hourly">Hourly</option>
+                        <option value="3-hourly">3-Hourly</option>
+                        <option value="daily">Daily</option>
+                    </select>
                 </div>
 
                 <div class="setting-group">

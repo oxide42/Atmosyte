@@ -10,17 +10,19 @@ class OpenWeatherMapProvider {
       );
     }
 
+    let exclude;
     let endpoint;
     switch (forecastType) {
       case "daily":
-        endpoint = `https://api.openweathermap.org/data/2.5/forecast/daily?lat=${latitude}&lon=${longitude}&appid=${this.settings.settings.owmApiToken}&units=metric&cnt=7`;
+        exclude = `current,minutely,hourly`;
+        endpoint = `https://api.openweathermap.org/data/3.0/onecall?lat=${latitude}&lon=${longitude}&exclude=${exclude}&appid=${this.settings.settings.owmApiToken}&units=metric`;
         break;
       case "hourly":
-        endpoint = `https://api.openweathermap.org/data/2.5/forecast?lat=${latitude}&lon=${longitude}&appid=${this.settings.settings.owmApiToken}&units=metric`;
+        exclude = `daily,minutely,current`;
+        endpoint = `https://api.openweathermap.org/data/3.0/onecall?lat=${latitude}&lon=${longitude}&exclude=${exclude}&appid=${this.settings.settings.owmApiToken}&units=metric`;
         break;
-      case "threeHour":
-      default:
-        endpoint = `https://api.openweathermap.org/data/2.5/forecast?lat=${latitude}&lon=${longitude}&appid=${this.settings.settings.owmApiToken}&units=metric`;
+      case "3-hourly":
+        endpoint = `https://api.openweathermap.org/data/2.5/forecast?lat=${latitude}&lon=${longitude}&exclude=${exclude}&appid=${this.settings.settings.owmApiToken}&units=metric`;
         break;
     }
 
@@ -34,37 +36,48 @@ class OpenWeatherMapProvider {
   }
 
   processWeatherData(data, forecastType) {
-    let processedData = [];
+    let selectedData;
+    let processedData;
 
-    if (forecastType === "daily" && data.list) {
-      processedData = data.list.map((item) => ({
+    if (forecastType === "daily") {
+      processedData = data.daily.map((item) => ({
         time: new Date(item.dt * 1000),
         temperature: this.settings.convertTemperature(item.temp.day),
         tempMin: this.settings.convertTemperature(item.temp.min),
         tempMax: this.settings.convertTemperature(item.temp.max),
         precipitation: item.rain ? item.rain : 0,
         precipitationProb: item.pop ? Math.round(item.pop * 100) : 0,
-        windSpeed: this.settings.convertWindSpeed(item.speed),
+        windSpeed: this.settings.convertWindSpeed(item.wind_speed),
         clouds: item.clouds,
         sunHours: Math.max(0, 100 - item.clouds),
       }));
-    } else if (data.list) {
+    } else if (forecastType === "hourly") {
+      processedData = data.hourly.map((item) => ({
+        time: new Date(item.dt * 1000),
+        temperature: this.settings.convertTemperature(item.temp),
+        tempMin: this.settings.convertTemperature(item.temp),
+        tempMax: this.settings.convertTemperature(item.temp),
+        precipitation: item.rain ? item.rain["1h"] || 0 : 0,
+        precipitationProb: item.pop ? Math.round(item.pop * 100) : 0,
+        windSpeed: this.settings.convertWindSpeed(item.wind_speed),
+        clouds: item.clouds,
+        sunHours: Math.max(0, 100 - item.clouds),
+      }));
+    } else if (forecastType === "3-hourly") {
       processedData = data.list.map((item) => ({
         time: new Date(item.dt * 1000),
-        temperature: this.settings.convertTemperature(item.main.temp),
-        tempMin: this.settings.convertTemperature(item.main.temp_min),
-        tempMax: this.settings.convertTemperature(item.main.temp_max),
-        precipitation: item.rain ? item.rain["3h"] || item.rain["1h"] || 0 : 0,
+        temperature: this.settings.convertTemperature(item.main["temp"]),
+        tempMin: this.settings.convertTemperature(item.main["temp_min"]),
+        tempMax: this.settings.convertTemperature(item.main["temp_max"]),
+        precipitation: item.rain ? item.rain["3h"] || 0 : 0,
         precipitationProb: item.pop ? Math.round(item.pop * 100) : 0,
-        windSpeed: this.settings.convertWindSpeed(item.wind.speed),
-        clouds: item.clouds.all,
-        sunHours: Math.max(0, 100 - item.clouds.all),
+        windSpeed: this.settings.convertWindSpeed(item.wind["speed"]),
+        windGust: this.settings.convertWindSpeed(item.wind["gust"]),
+        windDegree: this.settings.convertWindSpeed(item.wind["deg"]),
+        clouds: item.clouds["all"],
+        sunHours: Math.max(0, 100 - item.clouds["all"]),
       }));
-
-      if (forecastType === "hourly") {
-        processedData = processedData.slice(0, 24);
-      }
-    }
+    } else throw new Error(`Unknown forecast type: ${forecastType}`);
 
     return processedData;
   }

@@ -5,7 +5,7 @@ class WeatherApp {
     this.weatherService = new WeatherService(this.settings);
     this.locationService = new LocationService(this.settings);
     this.weatherChart = new WeatherChart(this.settings);
-    this.currentForecastType = "threeHour";
+    this.currentForecastType = this.settings.getForecastType();
     this.initializeUI();
     this.loadWeatherData();
     this.loadLocationName();
