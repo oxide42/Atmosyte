@@ -529,15 +529,16 @@ class WeatherChart {
   }
 
   setupChartEvents(chart, xAxis) {
+    self = this;
+
     chart.events.on("ready", () => {
       xAxis.zoom(0, 0.05);
     });
 
-    // Recalculate label positions on zoom changes
-    xAxis.events.on("selectionchanged", () => {
-      if (this.labelPositions && this.labelPositions.length > 0) {
+    xAxis.onPrivate("selectionMin", function (value, target) {
+      if (self.labelPositions && self.labelPositions.length > 0) {
         setTimeout(() => {
-          this.recalculateLabelVisibility(xAxis);
+          self.recalculateLabelVisibility(xAxis);
         }, 50);
       }
     });
@@ -665,7 +666,10 @@ class WeatherChart {
       }
     }
 
-    return { maxima, minima };
+    return {
+      maxima: this.filterGroups(minima, false),
+      minima: this.filterGroups(maxima, true),
+    };
   }
 
   calculateProminence(data, peakIndex, type) {
