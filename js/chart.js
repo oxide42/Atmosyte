@@ -145,7 +145,7 @@ class WeatherChart {
         yAxis: yAxis,
         valueYField: "temperature",
         valueXField: "time",
-        tension: 0.3,
+        tension: 0.5,
       }),
     );
 
@@ -176,7 +176,7 @@ class WeatherChart {
       fill: am5.color(0x0000aa),
       stroke: am5.color(0x0000ff),
       width: am5.percent(100),
-      opacity: 0.2,
+      opacity: 1,
     });
 
     return precipSeries;
