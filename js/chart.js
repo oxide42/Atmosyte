@@ -110,6 +110,8 @@ class WeatherChart {
     return chart.yAxes.push(
       am5xy.ValueAxis.new(root, {
         min: 0,
+        max: 5,
+        strictMinMax: false,
         renderer: am5xy.AxisRendererY.new(root, {
           opposite: true,
         }),
