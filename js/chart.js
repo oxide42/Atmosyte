@@ -70,7 +70,7 @@ class WeatherChart {
       am5xy.DateAxis.new(root, {
         baseInterval: {
           timeUnit: "hour",
-          count: 3,
+          count: 1,
         },
         markUnitChange: true,
         renderer: am5xy.AxisRendererX.new(root, {
@@ -101,6 +101,7 @@ class WeatherChart {
         extraMax: 0.05,
         visible: false,
         strictMinMax: false,
+        autoZoom: false,
         renderer: am5xy.AxisRendererY.new(root, {
           strokeDasharray: [1, 3],
         }),
@@ -114,6 +115,7 @@ class WeatherChart {
         min: 0,
         max: 5,
         strictMinMax: false,
+        autoZoom: false,
         renderer: am5xy.AxisRendererY.new(root, {
           opposite: true,
         }),
@@ -129,6 +131,7 @@ class WeatherChart {
         extraMax: 0.1,
         visible: false,
         strictMinMax: false,
+        autoZoom: false,
         renderer: am5xy.AxisRendererY.new(root, {
           visible: false,
         }),
