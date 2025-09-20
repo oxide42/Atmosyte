@@ -392,6 +392,10 @@ class WeatherChart {
   handleLabelCollisions(root, tempSeries, windSeries, processedData) {
     if (!this.labelPositions.length) return;
 
+    return;
+
+    console.log("handleLabelCollisions");
+
     // Sort labels by x position for efficient collision detection
     const sortedLabels = [...this.labelPositions].sort(
       (a, b) => a.extremaIndex - b.extremaIndex,
@@ -490,6 +494,7 @@ class WeatherChart {
   }
 
   applyLabelOffset(labelInfo, dyOffset) {
+    console.log("applyLabelOffset");
     labelInfo.originalDy = dyOffset;
     labelInfo.label.set("dy", dyOffset);
 
@@ -515,6 +520,7 @@ class WeatherChart {
   }
 
   hideLabelConditionally(labelInfo) {
+    console.log("hideLabelConditionally");
     labelInfo.visible = false;
     labelInfo.label.set("visible", false);
 
@@ -544,8 +550,8 @@ class WeatherChart {
   }
 
   recalculateLabelVisibility(xAxis) {
-    const zoomStart = xAxis.zoom;
-    const zoomEnd = xAxis.zoomEnd || 1;
+    const zoomStart = xAxis.get("start");
+    const zoomEnd = xAxis.get("end");
     const visibleRange = zoomEnd - zoomStart;
 
     // Reset all labels to visible first
@@ -557,82 +563,23 @@ class WeatherChart {
       }
     });
 
-    console.log("Visible range: " + visibleRange);
-
     // Apply conditional visibility based on zoom level
-    if (visibleRange < 0.1) {
-      // High zoom - show more labels with repositioning
-      this.applyHighZoomLabelStrategy();
-    } else if (visibleRange < 0.3) {
-      // Medium zoom - moderate label density
-      this.applyMediumZoomLabelStrategy();
-    } else {
-      // Low zoom - show only most important labels
-      this.applyLowZoomLabelStrategy();
-    }
-  }
+    if (visibleRange > 0.8) {
+      console.log("Visible range: " + visibleRange);
 
-  applyHighZoomLabelStrategy() {
-    // Show all labels with aggressive repositioning
-    const sortedLabels = [...this.labelPositions].sort(
-      (a, b) => a.extremaIndex - b.extremaIndex,
-    );
-    for (let i = 0; i < sortedLabels.length - 1; i++) {
-      const current = sortedLabels[i];
-      const next = sortedLabels[i + 1];
-      const distance = Math.abs(next.extremaIndex - current.extremaIndex);
+      const sortedLabels = [...this.labelPositions].sort(
+        (a, b) => a.extremaIndex - b.extremaIndex,
+      );
+      for (let i = 0; i < sortedLabels.length - 1; i++) {
+        const current = sortedLabels[i];
+        const next = sortedLabels[i + 1];
+        const distance = Math.abs(next.extremaIndex - current.extremaIndex);
 
-      if (distance < 3) {
-        this.applyLabelOffset(next, i % 2 === 0 ? -30 : 30);
-      }
-    }
-  }
-
-  applyMediumZoomLabelStrategy() {
-    // Show labels with moderate filtering
-    const sortedLabels = [...this.labelPositions].sort(
-      (a, b) => a.extremaIndex - b.extremaIndex,
-    );
-    for (let i = 0; i < sortedLabels.length - 1; i++) {
-      const current = sortedLabels[i];
-      const next = sortedLabels[i + 1];
-      const distance = Math.abs(next.extremaIndex - current.extremaIndex);
-
-      if (distance < 4) {
-        if (current.labelType === "temperature") {
-          this.hideLabelConditionally(next);
-        } else {
-          this.hideLabelConditionally(current);
+        if (distance < 3) {
+          this.applyLabelOffset(next, i % 2 === 0 ? -30 : 30);
         }
       }
     }
-  }
-
-  applyLowZoomLabelStrategy() {
-    // Show only high-priority labels with significant spacing
-    const tempLabels = this.labelPositions.filter(
-      (l) => l.labelType === "temperature",
-    );
-    const windLabels = this.labelPositions.filter(
-      (l) => l.labelType === "wind",
-    );
-
-    // Keep only temperature labels that are far apart
-    for (let i = 1; i < tempLabels.length; i++) {
-      const distance = Math.abs(
-        tempLabels[i].extremaIndex - tempLabels[i - 1].extremaIndex,
-      );
-      if (distance < 8) {
-        this.hideLabelConditionally(tempLabels[i]);
-      }
-    }
-
-    // Hide most wind labels in low zoom
-    windLabels.forEach((label, index) => {
-      if (index % 2 === 1) {
-        this.hideLabelConditionally(label);
-      }
-    });
   }
 
   findLocalExtrema(timeSeries, property) {
