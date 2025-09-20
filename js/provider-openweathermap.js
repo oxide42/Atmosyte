@@ -53,7 +53,7 @@ class OpenWeatherMapProvider {
         temperature: this.settings.convertTemperature(item.temp),
         tempMin: this.settings.convertTemperature(item.temp),
         tempMax: this.settings.convertTemperature(item.temp),
-        precipitation: item.rain ? item.rain : 0,
+        precipitation: item.rain ? item.rain["1h"] || item.rain["3h"] || 0 : 0,
         precipitationProb: item.pop ? Math.round(item.pop * 100) : 0,
         windSpeed: this.settings.convertWindSpeed(item.wind_speed),
         clouds: item.clouds,
@@ -61,7 +61,6 @@ class OpenWeatherMapProvider {
       }));
     }
 
-    console.log(processedData);
     return processedData;
   }
 }
