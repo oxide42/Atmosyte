@@ -2,11 +2,12 @@ class Settings {
   constructor() {
     this.defaultSettings = {
       weatherProvider: "openweathermap",
-      owmApiToken: "",
+      owmApiToken: "5406ee71a60ddbf3068865e7e9cb1d15",
       dmiApiToken: "",
       tempUnit: "celsius",
       windUnit: "ms",
       locationCacheMinutes: 15,
+      owmForecastType: "3-hourly",
     };
     this.settings = this.loadSettings();
     this.initializeUI();
@@ -26,6 +27,14 @@ class Settings {
     );
   }
 
+  getForecastType() {
+    if (this.settings.weatherProvider === "openweathermap")
+      return this.settings.owmForecastType;
+    else {
+      throw new Error(`Unknown provider: ${this.settings.weatherProvider}`);
+    }
+  }
+
   initializeUI() {
     const weatherProvider = document.getElementById("weatherProvider");
     const owmApiToken = document.getElementById("owmApiToken");
@@ -35,6 +44,7 @@ class Settings {
     const locationCacheMinutes = document.getElementById(
       "locationCacheMinutes",
     );
+    const owmForecastType = document.getElementById("owmForecastType");
     const saveBtn = document.getElementById("saveSettings");
 
     weatherProvider.value = this.settings.weatherProvider;
@@ -43,13 +53,14 @@ class Settings {
     tempUnit.value = this.settings.tempUnit;
     windUnit.value = this.settings.windUnit;
     locationCacheMinutes.value = this.settings.locationCacheMinutes;
+    owmForecastType.value = this.settings.owmForecastType;
 
     // Show/hide API token field based on provider
-    this.toggleApiTokenField(this.settings.weatherProvider);
+    this.toggleFields(this.settings.weatherProvider);
 
     // Listen for provider changes
     weatherProvider.addEventListener("change", (e) => {
-      this.toggleApiTokenField(e.target.value);
+      this.toggleFields(e.target.value);
     });
 
     saveBtn.addEventListener("click", (e) => {
@@ -61,18 +72,17 @@ class Settings {
       this.settings.windUnit = windUnit.value;
       this.settings.locationCacheMinutes =
         parseInt(locationCacheMinutes.value) || 30;
+      this.settings.owmForecastType = owmForecastType.value;
 
       this.saveSettings();
-      alert("Settings saved successfully!");
-
-      // Trigger callback if provided
+      // Trigger callback inonef provided
       if (this.onSettingsSaved) {
         this.onSettingsSaved();
       }
     });
   }
 
-  toggleApiTokenField(provider) {
+  toggleFields(provider) {
     const owmApiTokenGroup = document.querySelector(
       ".setting-group:has(#owmApiToken)",
     );
@@ -82,11 +92,13 @@ class Settings {
 
     if (owmApiTokenGroup && dmiApiTokenGroup) {
       owmApiTokenGroup.style.display = "none";
+      owmForecastType.style.display = "none";
       dmiApiTokenGroup.style.display = "none";
 
       // Show appropriate API token field based on provider
       if (provider === "openweathermap") {
         owmApiTokenGroup.style.display = "block";
+        owmForecastType.style.display = "block";
       } else if (provider === "dmi") {
         dmiApiTokenGroup.style.display = "block";
       }

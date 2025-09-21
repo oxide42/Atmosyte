@@ -66,11 +66,23 @@ class WeatherChart {
   //
 
   createXAxis(root, chart) {
+    const forecastType = this.settings.getForecastType();
+
+    let unitCount = 1;
+    switch (forecastType) {
+      case "daily":
+        unitCount = 24;
+        break;
+      case "3-hourly":
+        unitCount = 3;
+        break;
+    }
+
     const xAxis = chart.xAxes.push(
       am5xy.DateAxis.new(root, {
         baseInterval: {
           timeUnit: "hour",
-          count: 1,
+          count: unitCount,
         },
         markUnitChange: true,
         renderer: am5xy.AxisRendererX.new(root, {
@@ -82,7 +94,7 @@ class WeatherChart {
         zoomX: true,
         zoomY: false,
         start: 0,
-        end: 0.3,
+        end: 0.7,
       }),
     );
 
