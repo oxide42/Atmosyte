@@ -29,14 +29,14 @@ class WeatherChart {
     const windAxis = this.createWindAxis(root, chart, yAxis);
 
     const tempSeries = this.createTemperatureSeries(root, chart, xAxis, yAxis);
+    const windSeries = this.createWindSeries(root, chart, xAxis, windAxis);
     const precipSeries = this.createPrecipitationSeries(
       root,
       chart,
       xAxis,
       yAxisRight,
     );
-    const sunSeries = this.createSunSeries(root, chart, xAxis, windAxis);
-    const windSeries = this.createWindSeries(root, chart, xAxis, windAxis);
+    const sunSeries = this.createSunSeries(root, chart, xAxis, yAxisRight);
 
     const processedData = this.processData(weatherData);
     let tempExtremas = this.findLocalExtrema(weatherData, "temperature");
@@ -126,8 +126,9 @@ class WeatherChart {
       am5xy.ValueAxis.new(root, {
         min: 0,
         max: 5,
-        strictMinMax: false,
+        strictMinMax: true,
         autoZoom: false,
+        visible: false,
         renderer: am5xy.AxisRendererY.new(root, {
           opposite: true,
         }),
@@ -140,7 +141,7 @@ class WeatherChart {
     return chart.yAxes.push(
       am5xy.ValueAxis.new(root, {
         min: 0,
-        extraMax: 0.1,
+        extraMax: 0.5,
         visible: false,
         strictMinMax: false,
         autoZoom: false,
@@ -178,19 +179,20 @@ class WeatherChart {
     return tempSeries;
   }
 
-  createPrecipitationSeries(root, chart, xAxis, yAxisRight) {
+  createPrecipitationSeries(root, chart, xAxis, yAxis) {
     const precipSeries = chart.series.push(
       am5xy.LineSeries.new(root, {
         name: "Precipitation (mm)",
         xAxis: xAxis,
-        yAxis: yAxisRight,
+        yAxis: yAxis,
         valueYField: "precipitationBar",
+        openValueYField: "precipitationBase",
         valueXField: "time",
       }),
     );
 
     precipSeries.fills.template.setAll({
-      fillOpacity: 0.5,
+      fillOpacity: 0.7,
       visible: true,
       templateField: "precipFillSettings",
     });
@@ -198,12 +200,12 @@ class WeatherChart {
     return precipSeries;
   }
 
-  createSunSeries(root, chart, xAxis, windAxis) {
+  createSunSeries(root, chart, xAxis, yAxis) {
     const sunSeries = chart.series.push(
       am5xy.LineSeries.new(root, {
         name: "Sun Hours",
         xAxis: xAxis,
-        yAxis: windAxis,
+        yAxis: yAxis,
         valueYField: "sunHoursBar",
         openValueYField: "sunHoursBase",
         valueXField: "time",
@@ -249,6 +251,33 @@ class WeatherChart {
     return weatherData;
   }
 
+  getGradientColor(value, base, max, color) {
+    const clampedValue = Math.max(0, Math.min(max, value));
+
+    // Normalize to 0-1 range
+    const ratio = clampedValue / max;
+
+    // White: RGB(255, 255, 255)
+    // Deep Blue: RGB(0, 0, 139)
+    let r;
+    let g;
+    let b;
+    let diff;
+    if (base > 139) diff = 255 - 139;
+    else diff = 139 - 128;
+
+    if (color.includes("r")) r = Math.round(base - diff * ratio);
+    else r = Math.round(255 * (1 - ratio));
+
+    if (color.includes("g")) g = Math.round(base - diff * ratio);
+    else g = Math.round(255 * (1 - ratio));
+
+    if (color.includes("b")) b = Math.round(base - diff * ratio);
+    else b = Math.round(255 * (1 - ratio));
+
+    return am5.color(`rgb(${r}, ${g}, ${b})`);
+  }
+
   prepareChartData(processedData) {
     return processedData.map((item) => ({
       time: item.time.getTime(),
@@ -258,25 +287,17 @@ class WeatherChart {
       sunHours: item.sunHours,
       sunHoursBase: 0,
       sunHoursBar: 1,
-      precipitationBase: 1,
+      precipitationBase: 0,
       precipitationBar: 1,
       windSpeed: item.windSpeed,
       sunFillSettings: {
-        fill: am5.color(
-          `rgb(${Math.round(item.sunHours * 2.55)}, ${Math.round(item.sunHours * 2.55)}, 0)`,
-        ),
-        stroke: am5.color(`rgb(255, 255, 0)`),
+        fill: this.getGradientColor(item.sunHours, 255, 100, "rg"),
       },
       windStrokeSettings: {
-        stroke: am5.color(
-          `rgb(255, ${255 - Math.round(Math.min(item.windSpeed / 24, 1) * 255)}, 255)`,
-        ),
+        stroke: this.getGradientColor(item.windSpeed, 255, 24, "r"),
       },
       precipFillSettings: {
-        fill: am5.color(
-          `rgb(0, 0, ${Math.round(Math.min(item.precipitation * 100, 255))})`,
-        ),
-        stroke: am5.color(`rgb(0, 0, 255)`),
+        fill: this.getGradientColor(item.precipitation, 255, 2, "b"),
       },
     }));
   }

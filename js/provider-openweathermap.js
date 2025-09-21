@@ -74,8 +74,8 @@ class OpenWeatherMapProvider {
         windSpeed: this.settings.convertWindSpeed(item.wind["speed"]),
         windGust: this.settings.convertWindSpeed(item.wind["gust"]),
         windDegree: this.settings.convertWindSpeed(item.wind["deg"]),
-        clouds: item.clouds,
-        sunHours: Math.max(0, 100 - item.clouds),
+        clouds: item.clouds["all"],
+        sunHours: Math.max(0, 100 - item.clouds["all"]),
       }));
     } else throw new Error(`Unknown forecast type: ${forecastType}`);
 
