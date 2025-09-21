@@ -180,22 +180,19 @@ class WeatherChart {
 
   createPrecipitationSeries(root, chart, xAxis, yAxisRight) {
     const precipSeries = chart.series.push(
-      am5xy.ColumnSeries.new(root, {
+      am5xy.LineSeries.new(root, {
         name: "Precipitation (mm)",
         xAxis: xAxis,
         yAxis: yAxisRight,
-        valueYField: "precipitation",
+        valueYField: "precipitationBar",
         valueXField: "time",
-        tension: 0.3,
       }),
     );
 
-    precipSeries.columns.template.setAll({
-      width: am5.percent(100),
-      fill: am5.color(0x0000aa),
-      stroke: am5.color(0x0000ff),
-      width: am5.percent(100),
-      opacity: 0.8,
+    precipSeries.fills.template.setAll({
+      fillOpacity: 0.5,
+      visible: true,
+      templateField: "precipFillSettings",
     });
 
     return precipSeries;
@@ -261,6 +258,8 @@ class WeatherChart {
       sunHours: item.sunHours,
       sunHoursBase: 0,
       sunHoursBar: 1,
+      precipitationBase: 1,
+      precipitationBar: 1,
       windSpeed: item.windSpeed,
       sunFillSettings: {
         fill: am5.color(
@@ -273,7 +272,10 @@ class WeatherChart {
           `rgb(255, ${255 - Math.round(Math.min(item.windSpeed / 24, 1) * 255)}, 255)`,
         ),
       },
-      precipStrokeSettings: {
+      precipFillSettings: {
+        fill: am5.color(
+          `rgb(0, 0, ${Math.round(Math.min(item.precipitation * 100, 255))})`,
+        ),
         stroke: am5.color(`rgb(0, 0, 255)`),
       },
     }));
