@@ -1,4 +1,4 @@
-# Atmosyte
+# Nimbus
 
 A minimalistic weather App
 
