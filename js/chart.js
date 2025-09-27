@@ -192,7 +192,7 @@ class WeatherChart {
     );
 
     precipSeries.fills.template.setAll({
-      fillOpacity: 0.7,
+      fillOpacity: 0.5,
       visible: true,
       templateField: "precipFillSettings",
     });
@@ -227,8 +227,9 @@ class WeatherChart {
         name: "Wind Speed",
         xAxis: xAxis,
         yAxis: windAxis,
-        valueYField: "windSpeed",
         valueXField: "time",
+        valueYField: "windSpeed",
+        openValueYField: "windBase",
         tension: 0.3,
       }),
     );
@@ -251,31 +252,19 @@ class WeatherChart {
     return weatherData;
   }
 
-  getGradientColor(value, base, max, color) {
-    const clampedValue = Math.max(0, Math.min(max, value));
-
-    // Normalize to 0-1 range
-    const ratio = clampedValue / max;
-
-    // White: RGB(255, 255, 255)
-    // Deep Blue: RGB(0, 0, 139)
-    let r;
-    let g;
-    let b;
-    let diff;
-    if (base > 139) diff = 255 - 139;
-    else diff = 139 - 128;
-
-    if (color.includes("r")) r = Math.round(base - diff * ratio);
-    else r = Math.round(255 * (1 - ratio));
-
-    if (color.includes("g")) g = Math.round(base - diff * ratio);
-    else g = Math.round(255 * (1 - ratio));
-
-    if (color.includes("b")) b = Math.round(base - diff * ratio);
-    else b = Math.round(255 * (1 - ratio));
-
-    return am5.color(`rgb(${r}, ${g}, ${b})`);
+  gradientColor(value, min, max, colorLow, colorHigh) {
+    const t = Math.max(0, Math.min(1, (value - min) / (max - min)));
+    const toRgb = (c) => parseInt(c.slice(1), 16);
+    const r1 = (toRgb(colorLow) >> 16) & 0xff,
+      g1 = (toRgb(colorLow) >> 8) & 0xff,
+      b1 = toRgb(colorLow) & 0xff;
+    const r2 = (toRgb(colorHigh) >> 16) & 0xff,
+      g2 = (toRgb(colorHigh) >> 8) & 0xff,
+      b2 = toRgb(colorHigh) & 0xff;
+    const r = Math.round(r1 + (r2 - r1) * t);
+    const g = Math.round(g1 + (g2 - g1) * t);
+    const b = Math.round(b1 + (b2 - b1) * t);
+    return `rgb(${r}, ${g}, ${b})`;
   }
 
   prepareChartData(processedData) {
@@ -286,18 +275,25 @@ class WeatherChart {
       precipitationProb: item.precipitationProb,
       sunHours: item.sunHours,
       sunHoursBase: 0,
-      sunHoursBar: 1,
-      precipitationBase: 0,
+      sunHoursBar: 0.5,
+      precipitationBase: 0.5,
       precipitationBar: 1,
+      windBase: 1,
       windSpeed: item.windSpeed,
       sunFillSettings: {
-        fill: this.getGradientColor(item.sunHours, 255, 100, "rg"),
+        fill: this.gradientColor(item.sunHours, 0, 50, "#888888", "#ffff22"),
       },
       windStrokeSettings: {
-        stroke: this.getGradientColor(item.windSpeed, 255, 24, "r"),
+        stroke: this.gradientColor(item.windSpeed, 0, 24, "#ffffff", "#ff0000"),
       },
       precipFillSettings: {
-        fill: this.getGradientColor(item.precipitation, 255, 2, "b"),
+        fill: this.gradientColor(
+          item.precipitation,
+          0,
+          100,
+          "#ffffff",
+          "#0000ff",
+        ),
       },
     }));
   }
