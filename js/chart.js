@@ -52,6 +52,8 @@ class WeatherChart {
       root,
       tempSeries,
       windSeries,
+      sunSeries,
+      precipSeries,
       tempExtremas,
       windExtremas,
       processedData,
@@ -306,12 +308,27 @@ class WeatherChart {
     root,
     tempSeries,
     windSeries,
+    sunSeries,
+    precipSeries,
     tempExtremas,
     windExtremas,
     processedData,
   ) {
     this.labelPositions = [];
     this.visibleLabels = [];
+
+    const addLabel = (container, text, centerX, centerY, dx, dy) => {
+      const label = container.children.push(
+        am5.Label.new(root, {
+          text: text,
+          centerX: centerX,
+          centerY: centerY,
+          dx: dx,
+          dy: dy,
+        }),
+      );
+      return label;
+    };
 
     const addBullet = (targetSeries, extremaIndex, value, labelType) => {
       var seriesDataItem = targetSeries.dataItems[extremaIndex];
@@ -330,15 +347,10 @@ class WeatherChart {
           }),
         );
 
-        var label = bullet.children.push(
-          am5.Label.new(root, {
-            text: value,
-            centerX: am5.p50,
-            centerY: am5.p100,
-            dx: 10,
-            dy: 0,
-          }),
-        );
+        var label = addLabel(bullet, value, am5.p50, am5.p100, 10, 0);
+
+        this.labelPositions.push(label);
+        this.visibleLabels.push(label);
 
         const bulletSprite = am5.Bullet.new(root, {
           sprite: bullet,
@@ -367,6 +379,29 @@ class WeatherChart {
     let windReady = false;
 
     const tryAddBullets = () => {
+      // Sun label
+      const sunContainer = am5.Container.new(root, {});
+      const label = addLabel(sunContainer, "Sun", am5.p0, am5.p50, 0, 10);
+      const bulletSprite = am5.Bullet.new(root, {
+        sprite: sunContainer,
+      });
+      sunSeries.addBullet(sunSeries.dataItems[0], bulletSprite);
+
+      // Precipitation label
+      const precipContainer = am5.Container.new(root, {});
+      const precipLabel = addLabel(
+        precipContainer,
+        "Precipitation",
+        am5.p0,
+        am5.p50,
+        0,
+        10,
+      );
+      const precipBulletSprite = am5.Bullet.new(root, {
+        sprite: precipContainer,
+      });
+      precipSeries.addBullet(precipSeries.dataItems[0], precipBulletSprite);
+
       if (tempReady && windReady) {
         // Add temperature bullets
         tempExtremas.maxima.forEach((extrema) => {
