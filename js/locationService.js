@@ -1,7 +1,7 @@
 class LocationService {
   constructor(settings) {
     this.settings = settings;
-    this.locationCache = null;
+    this.cookieCache = new Cache();
   }
 
   truncateCoordinates(lat, lon) {
@@ -11,18 +11,11 @@ class LocationService {
     };
   }
 
-  isLocationCacheValid() {
-    if (!this.locationCache) return false;
-
-    const cacheAgeMinutes =
-      (Date.now() - this.locationCache.timestamp) / (1000 * 60);
-    return cacheAgeMinutes < this.settings.settings.locationCacheMinutes;
-  }
-
   async getCurrentPosition() {
-    // Check if we have a valid cached location
-    if (this.isLocationCacheValid()) {
-      return this.locationCache.position;
+    // Check cache first
+    const cachedPosition = this.cookieCache.get("location_position");
+    if (cachedPosition) {
+      return cachedPosition;
     }
 
     return new Promise((resolve, reject) => {
@@ -43,12 +36,17 @@ class LocationService {
             coords: truncated,
           };
 
-          // Cache the processed position
-          this.locationCache = {
-            position: processedPosition,
-            timestamp: Date.now(),
-          };
-
+          // Cache in cookies with expiration
+          const expirationDate = new Date(
+            Date.now() +
+              this.settings.settings.locationCacheMinutes * 60 * 1000,
+          );
+          this.cookieCache.set(
+            "location_position",
+            processedPosition,
+            expirationDate,
+          );
+          locationCa;
           resolve(processedPosition);
         },
         (error) => {
@@ -58,11 +56,16 @@ class LocationService {
               coords: this.truncateCoordinates(55.4904, 9.4721),
             };
 
-            // Cache the fallback position
-            this.locationCache = {
-              position: fallbackPosition,
-              timestamp: Date.now(),
-            };
+            // Cache in cookies with expiration
+            const expirationDate = new Date(
+              Date.now() +
+                this.settings.settings.locationCacheMinutes * 60 * 1000,
+            );
+            this.cookieCache.set(
+              "location_position",
+              fallbackPosition,
+              expirationDate,
+            );
 
             resolve(fallbackPosition);
             return;
@@ -92,6 +95,16 @@ class LocationService {
   }
 
   async getCurrentPlaceName(lat, lon) {
+    // Create cache key based on truncated coordinates
+    const truncated = this.truncateCoordinates(lat, lon);
+    const cacheKey = `place_name_${truncated.latitude}_${truncated.longitude}`;
+
+    // Check cookie cache first
+    const cachedPlaceName = this.cookieCache.get(cacheKey);
+    if (cachedPlaceName) {
+      return cachedPlaceName;
+    }
+
     try {
       // Reverse address lookup with CORS proxy
       const addressUrl = "https://nominatim.openstreetmap.org/reverse";
@@ -119,17 +132,25 @@ class LocationService {
 
       const data = await response.json();
 
+      let placeName;
       if (data.address) {
-        return (
+        placeName =
           data.address.city ||
           data.address.municipality ||
           data.address.town ||
           data.address.village ||
-          "Unknown location"
-        );
+          "Unknown location";
       } else {
-        return "Unknown location";
+        placeName = "Unknown location";
       }
+
+      // Cache the place name with expiration
+      const expirationDate = new Date(
+        Date.now() + this.settings.settings.locationCacheMinutes * 60 * 1000,
+      );
+      this.cookieCache.set(cacheKey, placeName, expirationDate);
+
+      return placeName;
     } catch (error) {
       console.error("Error fetching place name:", error);
       return "Unknown location";
@@ -138,5 +159,7 @@ class LocationService {
 
   clearCache() {
     this.locationCache = null;
+    this.cookieCache.delete("location_position");
+    // Clear all place name caches (would need to track keys for full implementation)
   }
 }
