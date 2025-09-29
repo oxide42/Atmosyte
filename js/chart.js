@@ -143,7 +143,9 @@ class WeatherChart {
     return chart.yAxes.push(
       am5xy.ValueAxis.new(root, {
         min: 0,
-        extraMax: 0.5,
+        max: 10,
+        extraMax: 0.4,
+        extraMin: 0.02,
         visible: false,
         strictMinMax: false,
         autoZoom: false,
@@ -184,7 +186,7 @@ class WeatherChart {
   createPrecipitationSeries(root, chart, xAxis, yAxis) {
     const precipSeries = chart.series.push(
       am5xy.LineSeries.new(root, {
-        name: "Precipitation (mm)",
+        name: "Precipitation",
         xAxis: xAxis,
         yAxis: yAxis,
         valueYField: "precipitationBar",
@@ -205,7 +207,7 @@ class WeatherChart {
   createSunSeries(root, chart, xAxis, yAxis) {
     const sunSeries = chart.series.push(
       am5xy.LineSeries.new(root, {
-        name: "Sun Hours",
+        name: "Sun",
         xAxis: xAxis,
         yAxis: yAxis,
         valueYField: "sunHoursBar",
@@ -280,7 +282,7 @@ class WeatherChart {
       sunHoursBar: 0.5,
       precipitationBase: 0.5,
       precipitationBar: 1,
-      windBase: 1,
+      windBase: 0,
       windSpeed: item.windSpeed,
       sunFillSettings: {
         fill: this.gradientColor(item.sunHours, 0, 50, "#888888", "#ffff22"),
@@ -289,10 +291,11 @@ class WeatherChart {
         stroke: this.gradientColor(item.windSpeed, 0, 24, "#ffffff", "#ff0000"),
       },
       precipFillSettings: {
+        stroke: item.precipitation < 0.01 ? "#FFFFFF" : "#2F2F2F",
         fill: this.gradientColor(
           item.precipitation,
           0,
-          100,
+          10,
           "#ffffff",
           "#0000ff",
         ),
