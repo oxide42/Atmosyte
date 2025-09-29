@@ -381,7 +381,7 @@ class WeatherChart {
     const tryAddBullets = () => {
       // Sun label
       const sunContainer = am5.Container.new(root, {});
-      const label = addLabel(sunContainer, "Sun", am5.p0, am5.p50, 0, 10);
+      const label = addLabel(sunContainer, "☀", am5.p0, am5.p50, 0, 10);
       const bulletSprite = am5.Bullet.new(root, {
         sprite: sunContainer,
       });
@@ -391,7 +391,7 @@ class WeatherChart {
       const precipContainer = am5.Container.new(root, {});
       const precipLabel = addLabel(
         precipContainer,
-        "Precipitation",
+        "⛈",
         am5.p0,
         am5.p50,
         0,
