@@ -145,7 +145,7 @@ class WeatherChart {
         min: 0,
         max: 10,
         extraMax: 0.4,
-        extraMin: 0.02,
+        extraMin: 0,
         visible: false,
         strictMinMax: false,
         autoZoom: false,
@@ -196,7 +196,7 @@ class WeatherChart {
     );
 
     precipSeries.fills.template.setAll({
-      fillOpacity: 0.5,
+      fillOpacity: 0.2,
       visible: true,
       templateField: "precipFillSettings",
     });
@@ -217,7 +217,7 @@ class WeatherChart {
     );
 
     sunSeries.fills.template.setAll({
-      fillOpacity: 0.5,
+      fillOpacity: 0.2,
       visible: true,
       templateField: "sunFillSettings",
     });
@@ -280,7 +280,7 @@ class WeatherChart {
       sunHours: item.sunHours,
       sunHoursBase: 0,
       sunHoursBar: 0.5,
-      precipitationBase: 0.5,
+      precipitationBase: 0,
       precipitationBar: 1,
       windBase: 0,
       windSpeed: item.windSpeed,
@@ -291,7 +291,7 @@ class WeatherChart {
         stroke: this.gradientColor(item.windSpeed, 0, 24, "#ffffff", "#ff0000"),
       },
       precipFillSettings: {
-        stroke: item.precipitation < 0.01 ? "#FFFFFF" : "#2F2F2F",
+        stroke: item.precipitation < 0.01 ? "#FFFFFF" : "#6f6f6f",
         fill: this.gradientColor(
           item.precipitation,
           0,
@@ -384,7 +384,7 @@ class WeatherChart {
     const tryAddBullets = () => {
       // Sun label
       const sunContainer = am5.Container.new(root, {});
-      const label = addLabel(sunContainer, "☀", am5.p0, am5.p50, 0, 10);
+      const label = addLabel(sunContainer, "☀", am5.p0, am5.p50, 0, 7);
       const bulletSprite = am5.Bullet.new(root, {
         sprite: sunContainer,
       });
@@ -398,7 +398,7 @@ class WeatherChart {
         am5.p0,
         am5.p50,
         0,
-        10,
+        7,
       );
       const precipBulletSprite = am5.Bullet.new(root, {
         sprite: precipContainer,
