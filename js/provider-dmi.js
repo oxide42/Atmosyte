@@ -20,7 +20,7 @@ class DmiProvider {
 
     let endpoint;
     let configuration =
-      "wind-speed,temperature-2m,wind-dir-10m,fraction-of-cloud-cover-2m,total-precipitation";
+      "wind-speed,temperature-2m,wind-dir-10m,cloud-transmittance,total-precipitation";
 
     endpoint = `https://dmigw.govcloud.dk/v1/forecastedr/collections/harmonie_dini_sf/position?coords=POINT(${longitude} ${latitude})&crs=crs84&f=GeoJSON&parameter-name=${configuration}&api-key=${apiToken}`;
 
@@ -76,9 +76,8 @@ class DmiProvider {
           precipitation: properties["total-precipitation"],
           precipitationProb: null,
           windSpeed: this.settings.convertWindSpeed(properties["wind-speed"]),
-          clouds: properties["fraction_of_cloud_cover_2m"],
-          sunHours:
-            100 * Math.max(0, 1 - properties["fraction_of_cloud_cover_2m"]),
+          clouds: 100 * Math.max(0, 1 - properties["cloud-transmittance"]),
+          sunHours: 100 * properties["cloud-transmittance"],
         };
       });
     }
