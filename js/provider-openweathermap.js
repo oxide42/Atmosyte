@@ -1,6 +1,7 @@
 class OpenWeatherMapProvider {
   constructor(settings) {
     this.settings = settings;
+    this.cookieCache = new Cache();
   }
 
   async fetchWeatherData(latitude, longitude, forecastType) {
@@ -8,6 +9,11 @@ class OpenWeatherMapProvider {
       throw new Error(
         "Please configure your OpenWeatherMap API token in Settings. Get one free at https://openweathermap.org/api",
       );
+    }
+
+    const cachedResponce = this.cookieCache.get("provider-own-response");
+    if (cachedResponce) {
+      return this.processWeatherData(cachedResponce, forecastType);
     }
 
     let exclude;
@@ -32,6 +38,13 @@ class OpenWeatherMapProvider {
     }
 
     const data = await response.json();
+
+    this.cookieCache.set(
+      "provider-own-response",
+      data,
+      this.settings.settings.locationCacheMinutes,
+    );
+
     return this.processWeatherData(data, forecastType);
   }
 

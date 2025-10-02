@@ -5,7 +5,7 @@ class WeatherService {
       openweathermap: OpenWeatherMapProvider,
       dmi: DmiProvider,
     };
-    this.currentProvider = "openweathermap";
+    this.currentProvider = this.settings.settings.weatherProvider;
     this.locationService = new LocationService(settings);
     this.sunService = new SunService();
   }

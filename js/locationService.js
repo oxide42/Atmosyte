@@ -36,17 +36,12 @@ class LocationService {
             coords: truncated,
           };
 
-          // Cache in cookies with expiration
-          const expirationDate = new Date(
-            Date.now() +
-              this.settings.settings.locationCacheMinutes * 60 * 1000,
-          );
           this.cookieCache.set(
             "location_position",
             processedPosition,
-            expirationDate,
+            this.settings.settings.locationCacheMinutes,
           );
-          locationCa;
+
           resolve(processedPosition);
         },
         (error) => {
@@ -56,15 +51,10 @@ class LocationService {
               coords: this.truncateCoordinates(55.4904, 9.4721),
             };
 
-            // Cache in cookies with expiration
-            const expirationDate = new Date(
-              Date.now() +
-                this.settings.settings.locationCacheMinutes * 60 * 1000,
-            );
             this.cookieCache.set(
               "location_position",
               fallbackPosition,
-              expirationDate,
+              this.settings.settings.locationCacheMinutes,
             );
 
             resolve(fallbackPosition);
