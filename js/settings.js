@@ -30,9 +30,9 @@ class Settings {
   getForecastType() {
     if (this.settings.weatherProvider === "openweathermap")
       return this.settings.owmForecastType;
-    else {
-      throw new Error(`Unknown provider: ${this.settings.weatherProvider}`);
-    }
+    if (this.settings.weatherProvider === "dmi") return "hourly";
+
+    throw new Error(`Unknown provider: ${this.settings.weatherProvider}`);
   }
 
   initializeUI() {
