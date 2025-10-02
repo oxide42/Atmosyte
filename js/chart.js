@@ -291,7 +291,7 @@ class WeatherChart {
         stroke: this.gradientColor(item.windSpeed, 0, 24, "#ffffff", "#ff0000"),
       },
       precipFillSettings: {
-        stroke: item.precipitation < 0.01 ? "#FFFFFF" : "#6f6f6f",
+        stroke: item.precipitation < 0.01 ? "#FFFFFF" : "#afafaf",
         fill: this.gradientColor(
           item.precipitation,
           0,
