@@ -48,14 +48,70 @@ class WeatherApp {
       '<div class="loading">Loading weather data...</div>';
 
     try {
-      const weatherData = await this.weatherService.fetchWeatherData(
+      const result = await this.weatherService.fetchWeatherData(
         this.currentForecastType,
       );
       chartContainer.innerHTML = "";
-      this.weatherChart.createChart(weatherData);
+      this.weatherChart.createChart(result.data);
+      this.displayAlerts(result.alerts || []);
     } catch (error) {
       chartContainer.innerHTML = `<div class="error">Error: ${error.message}</div>`;
     }
+  }
+
+  formatAlertDate(date) {
+    const d = new Date(date);
+    const day = String(d.getDate()).padStart(2, "0");
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const year = d.getFullYear();
+    const hours = String(d.getHours()).padStart(2, "0");
+    const minutes = String(d.getMinutes()).padStart(2, "0");
+    return `${day}-${month}-${year} kl. ${hours}:${minutes}`;
+  }
+
+  displayAlerts(alerts) {
+    const alertsContainer = document.getElementById("alertsContainer");
+
+    if (!alerts || alerts.length === 0) {
+      alertsContainer.classList.add("hidden");
+      alertsContainer.innerHTML = "";
+      return;
+    }
+
+    alertsContainer.classList.remove("hidden");
+    alertsContainer.innerHTML = alerts
+      .map((alert) => {
+        const startDate = this.formatAlertDate(alert.start);
+        const endDate = this.formatAlertDate(alert.end);
+        const isSevere =
+          alert.tags &&
+          (alert.tags.includes("Extreme") || alert.tags.includes("Severe"));
+
+        return `
+        <div class="alert-item${isSevere ? " severe" : ""}">
+          <div class="alert-header">
+            <div>
+              <div class="alert-event">${alert.event || "Weather Alert"}</div>
+              ${alert.sender_name ? `<div class="alert-sender">${alert.sender_name}</div>` : ""}
+            </div>
+            <div class="alert-time">
+              ${startDate} - ${endDate}
+            </div>
+          </div>
+          <div class="alert-description">${alert.description}</div>
+          ${
+            alert.tags && alert.tags.length > 0
+              ? `
+            <div class="alert-tags">
+              ${alert.tags.map((tag) => `<span class="alert-tag">${tag}</span>`).join("")}
+            </div>
+          `
+              : ""
+          }
+        </div>
+      `;
+      })
+      .join("");
   }
 
   async loadLocationName() {

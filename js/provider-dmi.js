@@ -82,6 +82,8 @@ class DmiProvider {
       });
     }
 
+    processedData.alerts = [];
+
     return processedData;
   }
 
