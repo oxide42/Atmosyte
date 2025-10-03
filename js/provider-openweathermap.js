@@ -49,7 +49,6 @@ class OpenWeatherMapProvider {
   }
 
   processWeatherData(data, forecastType) {
-    let selectedData;
     let processedData;
 
     if (forecastType === "daily") {
@@ -92,6 +91,20 @@ class OpenWeatherMapProvider {
       }));
     } else throw new Error(`Unknown forecast type: ${forecastType}`);
 
-    return processedData;
+    const alerts = data.alerts
+      ? data.alerts.map((item) => ({
+          start: new Date(item.start * 1000),
+          end: new Date(item.end * 1000),
+          sender_name: item.sender_name,
+          event: item.event,
+          description: item.description,
+          tags: item.tags || [],
+        }))
+      : [];
+
+    return {
+      data: processedData,
+      alerts: alerts,
+    };
   }
 }

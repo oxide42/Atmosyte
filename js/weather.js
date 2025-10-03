@@ -31,14 +31,23 @@ class WeatherService {
       const { latitude, longitude } = position.coords;
 
       const provider = this.getProvider();
-      const weatherData = await provider.fetchWeatherData(
+      const result = await provider.fetchWeatherData(
         latitude,
         longitude,
         forecastType,
       );
 
       // Postprocess sun hours to correct for nighttime
-      return this.correctSunHours(weatherData, latitude, longitude);
+      const correctedData = this.correctSunHours(
+        result.data,
+        latitude,
+        longitude,
+      );
+
+      return {
+        data: correctedData,
+        alerts: result.alerts,
+      };
     } catch (error) {
       throw new Error(`Failed to fetch weather data: ${error.message}`);
     }
