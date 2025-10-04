@@ -37,6 +37,7 @@ class Settings {
     if (this.settings.weatherProvider === "openweathermap")
       return this.settings.owmForecastType;
     if (this.settings.weatherProvider === "dmi") return "hourly";
+    if (this.settings.weatherProvider === "openmeteo") return "hourly";
 
     throw new Error(`Unknown provider: ${this.settings.weatherProvider}`);
   }
@@ -78,6 +79,8 @@ class Settings {
       owmGroup.style.display = "block";
     } else if (provider === "dmi") {
       dmiGroup.style.display = "block";
+    } else if (provider === "openmeteo") {
+      // Open-Meteo doesn't require API token
     }
   }
 

@@ -3,6 +3,7 @@ class WeatherService {
     this.settings = settings;
     this.providers = {
       openweathermap: OpenWeatherMapProvider,
+      openmeteo: OpenMeteoProvider,
       dmi: DmiProvider,
     };
     this.currentProvider = this.settings.settings.weatherProvider;

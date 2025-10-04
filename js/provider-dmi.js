@@ -5,11 +5,10 @@ class DmiProvider {
   }
 
   async fetchWeatherData(latitude, longitude, forecastType) {
-    // DMI API can use an API token for enhanced access if provided
     const apiToken = this.settings.settings.dmiApiToken;
     if (!this.settings.settings.dmiApiToken) {
       throw new Error(
-        "Please configure your OpenWeatherMap API token in Settings. Get one free at https://openweathermap.org/api",
+        "Please configure your DMI API token in Settings. Get one free at https://opendatadocs.dmi.govcloud.dk/Authentication#h-1-register-as-a-user",
       );
     }
 
@@ -24,23 +23,11 @@ class DmiProvider {
 
     endpoint = `https://dmigw.govcloud.dk/v1/forecastedr/collections/harmonie_dini_sf/position?coords=POINT(${longitude} ${latitude})&crs=crs84&f=GeoJSON&parameter-name=${configuration}&api-key=${apiToken}`;
 
-    switch (forecastType) {
-      case "daily":
-      case "hourly":
-      case "threeHour":
-      default:
-    }
-
     try {
       const headers = {
         Accept: "application/json",
         "User-Agent": "Nimbus weather/1.0",
       };
-
-      // Add API token to headers if provided
-      if (apiToken) {
-        headers["Authorization"] = `Bearer ${apiToken}`;
-      }
 
       const response = await fetch(endpoint, { headers });
 
