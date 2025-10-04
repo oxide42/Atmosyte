@@ -113,6 +113,7 @@ class WeatherChart {
       am5xy.ValueAxis.new(root, {
         min: 0,
         extraMax: 0.05,
+        extraMin: 0.35,
         visible: false,
         strictMinMax: false,
         autoZoom: false,
@@ -143,9 +144,8 @@ class WeatherChart {
     return chart.yAxes.push(
       am5xy.ValueAxis.new(root, {
         min: 0,
-        max: 10,
-        extraMax: 0.4,
-        extraMin: 0,
+        extraMax: 0.6,
+        extraMin: 0.01,
         visible: false,
         strictMinMax: false,
         autoZoom: false,
