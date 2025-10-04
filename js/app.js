@@ -1,7 +1,6 @@
 class WeatherApp {
   constructor() {
     this.settings = new Settings();
-    this.settings.onSettingsSaved = () => this.loadWeatherData();
     this.weatherService = new WeatherService(this.settings);
     this.locationService = new LocationService(this.settings);
     this.weatherChart = new WeatherChart(this.settings);
@@ -19,6 +18,8 @@ class WeatherApp {
     settingsBtn.addEventListener("click", () => {
       // Toggle between main and settings
       if (settingsPage.classList.contains("active")) {
+        this.settings.saveSettings();
+        this.loadWeatherData();
         this.showPage("main");
       } else {
         this.showPage("settings");

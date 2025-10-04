@@ -42,25 +42,13 @@
                     </select>
                 </div>
 
-                <div class="setting-group">
+                <div class="setting-group" id="owmGroup">
                     <label for="owmApiToken">OpenWeatherMap API Token:</label>
                     <input
                         type="text"
                         id="owmApiToken"
                         placeholder="Enter your OpenWeatherMap API token"
                     />
-                </div>
-
-                <div class="setting-group">
-                    <label for="dmiApiToken">DMI API Token:</label>
-                    <input
-                        type="text"
-                        id="dmiApiToken"
-                        placeholder="Enter your DMI API token"
-                    />
-                </div>
-
-                <div class="setting-group">
                     <label for="owmForecastType"
                         >OpenWeatherMap Forecast Type:</label
                     >
@@ -69,6 +57,15 @@
                         <option value="3-hourly">3-Hourly</option>
                         <option value="daily">Daily</option>
                     </select>
+                </div>
+
+                <div class="setting-group" id="dmiGroup">
+                    <label for="dmiApiToken">DMI API Token:</label>
+                    <input
+                        type="text"
+                        id="dmiApiToken"
+                        placeholder="Enter your DMI API token"
+                    />
                 </div>
 
                 <div class="setting-group">
@@ -102,10 +99,6 @@
                         placeholder="30"
                     />
                 </div>
-
-                <button id="saveSettings" class="save-btn">
-                    Save Settings
-                </button>
             </div>
         </div>
 
