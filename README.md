@@ -1,4 +1,4 @@
-# Nimbus
+# Nimbus Weather
 
 A minimalistic weather App
 

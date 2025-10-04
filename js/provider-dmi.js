@@ -34,7 +34,7 @@ class DmiProvider {
     try {
       const headers = {
         Accept: "application/json",
-        "User-Agent": "Nimbus/1.0",
+        "User-Agent": "Nimbus weather/1.0",
       };
 
       // Add API token to headers if provided
