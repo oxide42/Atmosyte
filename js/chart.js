@@ -269,7 +269,7 @@ class WeatherChart {
   prepareChartData(processedData) {
     return processedData.map((item) => ({
       time: item.time.getTime(),
-      temperature: item.temperature,
+      temperature: item.extremas ? item.temperature : null,
       precipitation: item.precipitation,
       precipitationProb: item.precipitationProb,
       sunHours: item.sunHours,
