@@ -9,6 +9,7 @@ class WeatherService {
     this.currentProvider = this.settings.settings.weatherProvider;
     this.locationService = new LocationService(settings);
     this.sunService = new SunService();
+    this.extremaService = new ExtremaService(settings);
   }
 
   setProvider(providerName) {
@@ -45,8 +46,15 @@ class WeatherService {
         longitude,
       );
 
+      // Mark extrema points for temperature and wind
+      const processedData = this.extremaService.markExtrema(correctedData, [
+        "temperature",
+        "windSpeed",
+        "precipitation",
+      ]);
+
       return {
-        data: correctedData,
+        data: processedData,
         alerts: result.alerts,
       };
     } catch (error) {

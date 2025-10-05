@@ -39,9 +39,6 @@ class WeatherChart {
     const sunSeries = this.createSunSeries(root, chart, xAxis, yAxisRight);
 
     const processedData = this.processData(weatherData);
-    let tempExtremas = this.findLocalExtrema(weatherData, "temperature");
-    let windExtremas = this.findLocalExtrema(weatherData, "windSpeed");
-
     const chartData = this.prepareChartData(processedData);
 
     this.setSeriesData(
@@ -54,8 +51,6 @@ class WeatherChart {
       windSeries,
       sunSeries,
       precipSeries,
-      tempExtremas,
-      windExtremas,
       processedData,
     );
     this.setupChartEvents(chart, xAxis);
@@ -169,7 +164,7 @@ class WeatherChart {
         yAxis: yAxis,
         valueYField: "temperature",
         valueXField: "time",
-        tension: 0.5,
+        tension: 0.3,
       }),
     );
 
@@ -313,8 +308,6 @@ class WeatherChart {
     windSeries,
     sunSeries,
     precipSeries,
-    tempExtremas,
-    windExtremas,
     processedData,
   ) {
     this.labelPositions = [];
@@ -333,7 +326,14 @@ class WeatherChart {
       return label;
     };
 
-    const addBullet = (targetSeries, extremaIndex, value, labelType) => {
+    const addBullet = (
+      targetSeries,
+      extremaIndex,
+      value,
+      labelType,
+      centerX = am5.p50,
+      centerY = am5.p100,
+    ) => {
       var seriesDataItem = targetSeries.dataItems[extremaIndex];
 
       if (seriesDataItem) {
@@ -350,7 +350,7 @@ class WeatherChart {
           }),
         );
 
-        var label = addLabel(bullet, value, am5.p50, am5.p100, 10, 0);
+        var label = addLabel(bullet, value, centerX, centerY, 10, 0);
 
         this.labelPositions.push(label);
         this.visibleLabels.push(label);
@@ -406,36 +406,44 @@ class WeatherChart {
       precipSeries.addBullet(precipSeries.dataItems[0], precipBulletSprite);
 
       if (tempReady && windReady) {
-        // Add temperature bullets
-        tempExtremas.maxima.forEach((extrema) => {
-          const roundedValue = Math.round(
-            processedData[extrema.index].temperature,
-          );
-          const formattedValue = roundedValue + "°";
-          addBullet(tempSeries, extrema.index, formattedValue, "temperature");
-        });
-        tempExtremas.minima.forEach((extrema) => {
-          const roundedValue = Math.round(
-            processedData[extrema.index].temperature,
-          );
-          const formattedValue = roundedValue + "°";
-          addBullet(tempSeries, extrema.index, formattedValue, "temperature");
-        });
+        // Add bullets based on extremas property
+        processedData.forEach((dataPoint, index) => {
+          if (dataPoint.extremas) {
+            // Add temperature bullets
+            if (
+              dataPoint.extremas.isMinima?.includes("temperature") ||
+              dataPoint.extremas.isMaxima?.includes("temperature")
+            ) {
+              const roundedValue = Math.round(dataPoint.temperature);
+              const formattedValue = roundedValue + "°";
+              addBullet(tempSeries, index, formattedValue, "temperature");
+            }
 
-        // Add wind bullets
-        windExtremas.maxima.forEach((extrema) => {
-          const roundedValue = Math.round(
-            processedData[extrema.index].windSpeed,
-          );
-          const formattedValue = roundedValue + "m/s";
-          addBullet(windSeries, extrema.index, formattedValue, "wind");
-        });
-        windExtremas.minima.forEach((extrema) => {
-          const roundedValue = Math.round(
-            processedData[extrema.index].windSpeed,
-          );
-          const formattedValue = roundedValue + "m/s";
-          addBullet(windSeries, extrema.index, formattedValue, "wind");
+            // Add wind bullets
+            if (
+              dataPoint.extremas.isMinima?.includes("windSpeed") ||
+              dataPoint.extremas.isMaxima?.includes("windSpeed")
+            ) {
+              const roundedValue = Math.round(dataPoint.windSpeed);
+              const formattedValue =
+                roundedValue + " " + this.settings.getWindSpeedUnit();
+              addBullet(windSeries, index, formattedValue, "wind");
+            }
+
+            // Add precipitation bullets
+            if (dataPoint.extremas.isMaxima?.includes("precipitation")) {
+              const roundedValue = Math.round(dataPoint.precipitation);
+              const formattedValue = roundedValue;
+              addBullet(
+                precipSeries,
+                index,
+                formattedValue,
+                "precipitation",
+                am5.p50,
+                am5.p0,
+              );
+            }
+          }
         });
 
         // Handle label collisions after all bullets are added
@@ -652,113 +660,6 @@ class WeatherChart {
         }
       }
     }
-  }
-
-  findLocalExtrema(timeSeries, property) {
-    return this.smoothExtremas(this.extremaSimple(timeSeries, property));
-  }
-
-  extremaSimple(timeSeries, property) {
-    const minima = [];
-    const maxima = [];
-    const length = timeSeries.length;
-
-    if (length === 0) return { minima, maxima };
-
-    for (let i = 0; i < length; i++) {
-      const current = timeSeries[i][property];
-      const prev = i > 0 ? timeSeries[i - 1][property] : current;
-      const next = i < length - 1 ? timeSeries[i + 1][property] : current;
-
-      const point = { index: i, value: current, time: timeSeries[i].time };
-
-      // Check for maximum
-      if (current >= prev && current > next) {
-        maxima.push(point);
-      }
-      // Check for minimum
-      else if (current <= prev && current < next) {
-        minima.push(point);
-      }
-    }
-
-    return {
-      minima: minima,
-      maxima: maxima,
-    };
-  }
-
-  smoothExtremas(extremas) {
-    return this.filterExtremasCombined(extremas);
-  }
-
-  filterExtremasCombined(extremas) {
-    const allExtremas = [
-      ...extremas.minima.map((e) => ({ ...e, type: "minimum" })),
-      ...extremas.maxima.map((e) => ({ ...e, type: "maximum" })),
-    ];
-
-    if (!allExtremas.length) return { minima: [], maxima: [] };
-
-    // Sort by index to process chronologically
-    allExtremas.sort((a, b) => a.index - b.index);
-
-    const indexDistanceThreshold = 2;
-    const valueThresholdPct = 0.2;
-    const valueThresholdValue = 1;
-
-    const result = [];
-    let currentGroupPeak = allExtremas[0];
-
-    for (let i = 1; i < allExtremas.length; i++) {
-      const { index: currIdx, value: currVal } = allExtremas[i];
-      const { index: prevIdx, value: prevVal } = allExtremas[i - 1];
-
-      const isCloseInIndex = currIdx - prevIdx <= indexDistanceThreshold;
-      let isCloseInValue =
-        Math.abs(
-          (currVal - prevVal) / Math.max(Math.abs(currVal), Math.abs(prevVal)),
-        ) <= valueThresholdPct;
-      if (Math.abs(currVal - prevVal) < valueThresholdValue)
-        isCloseInValue = true;
-
-      if (isCloseInIndex && isCloseInValue) {
-        // Keep more extreme value within the group
-        // For mixed types, prefer the one with more extreme absolute deviation from average
-        const avgValue = (currVal + prevVal) / 2;
-        const currDeviation = Math.abs(currVal - avgValue);
-        const prevDeviation = Math.abs(currentGroupPeak.value - avgValue);
-
-        if (currDeviation > prevDeviation) {
-          currentGroupPeak = allExtremas[i];
-        }
-      } else {
-        result.push(currentGroupPeak);
-        currentGroupPeak = allExtremas[i];
-      }
-    }
-    result.push(currentGroupPeak);
-
-    // Separate back into minima and maxima
-    const filteredMinima = result
-      .filter((e) => e.type === "minimum")
-      .map((e) => ({
-        index: e.index,
-        value: e.value,
-        time: e.time,
-      }));
-    const filteredMaxima = result
-      .filter((e) => e.type === "maximum")
-      .map((e) => ({
-        index: e.index,
-        value: e.value,
-        time: e.time,
-      }));
-
-    return {
-      minima: filteredMinima,
-      maxima: filteredMaxima,
-    };
   }
 
   dispose() {
