@@ -26,7 +26,7 @@ class WeatherChart {
     const xAxis = this.createXAxis(root, chart);
     const yAxis = this.createYAxis(root, chart);
     const yAxisRight = this.createYAxisRight(root, chart, yAxis);
-    const windAxis = this.createWindAxis(root, chart, yAxis);
+    const windAxis = this.createWindAxis(root, chart, yAxisRight);
 
     const tempSeries = this.createTemperatureSeries(root, chart, xAxis, yAxis);
     const windSeries = this.createWindSeries(root, chart, xAxis, windAxis);
@@ -120,27 +120,31 @@ class WeatherChart {
   }
 
   createYAxisRight(root, chart, yAxis) {
-    return chart.yAxes.push(
+    const newAxis = chart.yAxes.push(
       am5xy.ValueAxis.new(root, {
         min: 0,
         max: 5,
         strictMinMax: true,
         autoZoom: false,
-        visible: false,
         renderer: am5xy.AxisRendererY.new(root, {
           opposite: true,
+          visible: false,
         }),
-        syncWithAxis: yAxis,
+        //syncWithAxis: yAxis,
       }),
     );
+    const yRenderer = newAxis.get("renderer");
+    yRenderer.grid.template.set("forceHidden", true);
+
+    return newAxis;
   }
 
   createWindAxis(root, chart, yAxis) {
-    return chart.yAxes.push(
+    const windAxis = chart.yAxes.push(
       am5xy.ValueAxis.new(root, {
         min: 0,
         extraMax: 0.6,
-        extraMin: 0.01,
+        extraMin: 0.00001,
         visible: false,
         strictMinMax: false,
         autoZoom: false,
@@ -150,6 +154,10 @@ class WeatherChart {
         syncWithAxis: yAxis,
       }),
     );
+    const yRenderer = windAxis.get("renderer");
+    yRenderer.grid.template.set("forceHidden", true);
+
+    return windAxis;
   }
 
   //
