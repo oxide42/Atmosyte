@@ -1,8 +1,8 @@
 class Settings {
   constructor() {
     this.defaultSettings = {
-      weatherProvider: "openweathermap",
-      owmApiToken: "5406ee71a60ddbf3068865e7e9cb1d15",
+      weatherProvider: "openmeteo",
+      owmApiToken: "",
       dmiApiToken: "",
       tempUnit: "celsius",
       windUnit: "ms",
