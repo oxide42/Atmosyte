@@ -57,7 +57,7 @@ class OpenMeteoProvider {
       processedData = data.hourly.time.map((time, index) => {
         const temp = data.hourly.temperature_2m[index];
         const precip = data.hourly.precipitation?.[index] || 0;
-        const windSpeed = data.hourly.wind_speed?.[index] || 0;
+        const windSpeed = data.hourly.wind_speed_10m?.[index] / 3.6 || 0;
         const cloudCover = data.hourly.cloud_cover?.[index] || 0;
 
         return {
