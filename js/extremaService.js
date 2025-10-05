@@ -2,7 +2,7 @@ class ExtremaService {
   constructor(settings) {
     this.indexDistanceThreshold = 3;
     this.valueThresholdPct = 0.2;
-    this.valueThresholdValue = 1;
+    this.valueThresholdValue = 3;
     this.forecastType = settings.settings.forecastType;
   }
 
