@@ -55,6 +55,8 @@ class OpenMeteoProvider {
       //    cloud_cover: array of floats in percentage (0-100)}
 
       processedData = data.hourly.time.map((time, index) => {
+        if (time < new Date().toISOString()) return null;
+
         const temp = data.hourly.temperature_2m[index];
         const precip = data.hourly.precipitation?.[index] || 0;
         const windSpeed = data.hourly.wind_speed_10m?.[index] / 3.6 || 0;
@@ -73,6 +75,9 @@ class OpenMeteoProvider {
         };
       });
     }
+
+    // Delete null values
+    processedData = processedData.filter((item) => item !== null);
 
     return {
       data: processedData,
