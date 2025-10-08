@@ -26,7 +26,7 @@ class WeatherService {
     }
     return new ProviderClass(this.settings);
   }
-
+  
   async fetchWeatherData(forecastType) {
     try {
       const position = await this.locationService.getCurrentPosition();
@@ -53,8 +53,18 @@ class WeatherService {
         "precipitation",
       ]);
 
+      const json = processedData.map((dataPoint) => {
+        return {
+          // time in yymmdd hh
+          time: dataPoint.time,
+          windSpeed: dataPoint.windSpeed,
+          extrema: dataPoint.extrema,
+        };
+      });
+
       return {
         data: processedData,
+        debug: json,
         alerts: result.alerts,
       };
     } catch (error) {

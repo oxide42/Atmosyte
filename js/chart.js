@@ -277,7 +277,7 @@ class WeatherChart {
   prepareChartData(processedData) {
     return processedData.map((item) => ({
       time: item.time.getTime(),
-      temperature: item.extremas ? item.temperature : null,
+      temperature: item.extrema ? item.temperature : null,
       precipitation: item.precipitation,
       precipitationProb: item.precipitationProb,
       sunHours: item.sunHours,
@@ -414,13 +414,13 @@ class WeatherChart {
       precipSeries.addBullet(precipSeries.dataItems[0], precipBulletSprite);
 
       if (tempReady && windReady) {
-        // Add bullets based on extremas property
+        // Add bullets based on extrema property
         processedData.forEach((dataPoint, index) => {
-          if (dataPoint.extremas) {
+          if (dataPoint.extrema) {
             // Add temperature bullets
             if (
-              dataPoint.extremas.isMinima?.includes("temperature") ||
-              dataPoint.extremas.isMaxima?.includes("temperature")
+              dataPoint.extrema.isMinima?.includes("temperature") ||
+              dataPoint.extrema.isMaxima?.includes("temperature")
             ) {
               const roundedValue = Math.round(dataPoint.temperature);
               const formattedValue = roundedValue + "°";
@@ -429,8 +429,8 @@ class WeatherChart {
 
             // Add wind bullets
             if (
-              dataPoint.extremas.isMinima?.includes("windSpeed") ||
-              dataPoint.extremas.isMaxima?.includes("windSpeed")
+              dataPoint.extrema.isMinima?.includes("windSpeed") ||
+              dataPoint.extrema.isMaxima?.includes("windSpeed")
             ) {
               const roundedValue = Math.round(dataPoint.windSpeed);
               const formattedValue =
@@ -439,7 +439,7 @@ class WeatherChart {
             }
 
             // Add precipitation bullets
-            if (dataPoint.extremas.isMaxima?.includes("precipitation")) {
+            if (dataPoint.extrema.isMaxima?.includes("precipitation")) {
               const roundedValue = Math.round(dataPoint.precipitation);
               const formattedValue = roundedValue;
               addBullet(

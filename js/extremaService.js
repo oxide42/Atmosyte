@@ -1,9 +1,63 @@
 class ExtremaService {
   constructor(settings) {
+    this.settings = settings;
+    // Base thresholds - will be adjusted per forecast type
     this.indexDistanceThreshold = 3;
     this.valueThresholdPct = 0.2;
-    this.valueThresholdValue = 3;
-    this.forecastType = settings.settings.forecastType;
+    this.valueThresholdValue = 2;
+  }
+
+  /**
+   * Mark datapoints with extrema property
+   * @param {Array} timeSeries - Array of data points
+   * @param {Array} properties - Array of property names to analyze (e.g., ['temperature', 'windSpeed'])
+   * @returns {Array} - Time series with extrema property added
+   */
+  markExtrema(timeSeries, properties) {
+    // Ensure properties is an array
+    const propsArray = Array.isArray(properties) ? properties : [properties];
+
+    // Create maps for each property
+    const minimaMap = new Map(); // index -> [property names]
+    const maximaMap = new Map(); // index -> [property names]
+
+    propsArray.forEach((property) => {
+      const localExtrema = this.#findLocalExtrema(timeSeries, property);
+
+      localExtrema.minima.forEach((e) => {
+        if (!minimaMap.has(e.index)) {
+          minimaMap.set(e.index, []);
+        }
+        minimaMap.get(e.index).push(property);
+      });
+
+      localExtrema.maxima.forEach((e) => {
+        if (!maximaMap.has(e.index)) {
+          maximaMap.set(e.index, []);
+        }
+        maximaMap.get(e.index).push(property);
+      });
+    });
+
+    // Mark each datapoint
+    return timeSeries.map((dataPoint, index) => {
+      const minima = minimaMap.get(index);
+      const maxima = maximaMap.get(index);
+
+      // Only add extrema property if there are any extrema
+      if (minima || maxima) {
+        const _extrema = {};
+        if (minima) _extrema.isMinima = minima;
+        if (maxima) _extrema.isMaxima = maxima;
+
+        return {
+          ...dataPoint,
+          extrema: _extrema,
+        };
+      }
+
+      return dataPoint;
+    });
   }
 
   /**
@@ -12,8 +66,8 @@ class ExtremaService {
    * @param {string} property - Property name to analyze (e.g., 'temperature')
    * @returns {Object} - Object with minima and maxima arrays
    */
-  findLocalExtrema(timeSeries, property) {
-    return this.smoothExtremas(this.extremaSimple(timeSeries, property));
+  #findLocalExtrema(timeSeries, property) {
+    return this.#smoothExtrema(this.#extremaSimple(timeSeries, property));
   }
 
   /**
@@ -22,7 +76,7 @@ class ExtremaService {
    * @param {string} property - Property name to analyze
    * @returns {Object} - Object with minima and maxima arrays
    */
-  extremaSimple(timeSeries, property) {
+  #extremaSimple(timeSeries, property) {
     const minima = [];
     const maxima = [];
     const length = timeSeries.length;
@@ -53,42 +107,39 @@ class ExtremaService {
   }
 
   /**
-   * Smooth/filter extremas to remove noise and close duplicates
-   * @param {Object} extremas - Object with minima and maxima arrays
-   * @returns {Object} - Filtered extremas
+   * Smooth/filter extrema to remove noise and close duplicates
+   * @param {Object} extrema - Object with minima and maxima arrays
+   * @returns {Object} - Filtered extrema
    */
-  smoothExtremas(extremas) {
-    return this.filterExtremasCombined(extremas);
-  }
-
-  /**
-   * Filter extremas by combining close points and rhttps://rethinkable.dkemoving noise
-   * @param {Object} extremas - Object with minima and maxima arrays
-   * @returns {Object} - Filtered extremas
-   */
-  filterExtremasCombined(extremas) {
-    const allExtremas = [
-      ...extremas.minima.map((e) => ({ ...e, type: "minimum" })),
-      ...extremas.maxima.map((e) => ({ ...e, type: "maximum" })),
+  #smoothExtrema(extrema) {
+    const allextrema = [
+      ...extrema.minima.map((e) => ({ ...e, type: "minimum" })),
+      ...extrema.maxima.map((e) => ({ ...e, type: "maximum" })),
     ];
 
-    if (!allExtremas.length) return { minima: [], maxima: [] };
+    if (!allextrema.length) return { minima: [], maxima: [] };
 
     // Sort by index to process chronologically
-    allExtremas.sort((a, b) => a.index - b.index);
+    allextrema.sort((a, b) => a.index - b.index);
 
     const result = [];
-    let currentGroupPeak = allExtremas[0];
-    let indexDistanceThreshold =
-      this.forecastType === "hourly"
-        ? this.indexDistanceThreshold * 3
-        : this.indexDistanceThreshold;
+    let currentGroupPeak = allextrema[0];
+
+    // Adjust thresholds based on forecast type
+    const forecastType = this.settings.getForecastType();
+    let indexDistanceThreshold = this.indexDistanceThreshold;
+    if (forecastType === "hourly") {
+      indexDistanceThreshold = this.indexDistanceThreshold * 4; // More aggressive filtering for hourly
+    } else if (forecastType === "3-hourly") {
+      indexDistanceThreshold = this.indexDistanceThreshold * 2;
+    }
+
     let valueThresholdPct = this.valueThresholdPct;
     let valueThresholdValue = this.valueThresholdValue;
 
-    for (let i = 1; i < allExtremas.length; i++) {
-      const { index: currIdx, value: currVal } = allExtremas[i];
-      const { index: prevIdx, value: prevVal } = allExtremas[i - 1];
+    for (let i = 1; i < allextrema.length; i++) {
+      const { index: currIdx, value: currVal } = allextrema[i];
+      const { index: prevIdx, value: prevVal } = allextrema[i - 1];
 
       const isCloseInIndex = currIdx - prevIdx <= indexDistanceThreshold;
       let isCloseInValue =
@@ -106,11 +157,11 @@ class ExtremaService {
         const prevDeviation = Math.abs(currentGroupPeak.value - avgValue);
 
         if (currDeviation > prevDeviation) {
-          currentGroupPeak = allExtremas[i];
+          currentGroupPeak = allextrema[i];
         }
       } else {
         result.push(currentGroupPeak);
-        currentGroupPeak = allExtremas[i];
+        currentGroupPeak = allextrema[i];
       }
     }
     result.push(currentGroupPeak);
@@ -135,58 +186,5 @@ class ExtremaService {
       minima: filteredMinima,
       maxima: filteredMaxima,
     };
-  }
-
-  /**
-   * Mark datapoints with extremas property
-   * @param {Array} timeSeries - Array of data points
-   * @param {Array} properties - Array of property names to analyze (e.g., ['temperature', 'windSpeed'])
-   * @returns {Array} - Time series with extremas property added
-   */
-  markExtrema(timeSeries, properties) {
-    // Ensure properties is an array
-    const propsArray = Array.isArray(properties) ? properties : [properties];
-
-    // Create maps for each property
-    const minimaMap = new Map(); // index -> [property names]
-    const maximaMap = new Map(); // index -> [property names]
-
-    propsArray.forEach((property) => {
-      const extremas = this.findLocalExtrema(timeSeries, property);
-
-      extremas.minima.forEach((e) => {
-        if (!minimaMap.has(e.index)) {
-          minimaMap.set(e.index, []);
-        }
-        minimaMap.get(e.index).push(property);
-      });
-
-      extremas.maxima.forEach((e) => {
-        if (!maximaMap.has(e.index)) {
-          maximaMap.set(e.index, []);
-        }
-        maximaMap.get(e.index).push(property);
-      });
-    });
-
-    // Mark each datapoint
-    return timeSeries.map((dataPoint, index) => {
-      const minima = minimaMap.get(index);
-      const maxima = maximaMap.get(index);
-
-      // Only add extremas property if there are any extrema
-      if (minima || maxima) {
-        const extremas = {};
-        if (minima) extremas.isMinima = minima;
-        if (maxima) extremas.isMaxima = maxima;
-
-        return {
-          ...dataPoint,
-          extremas: extremas,
-        };
-      }
-
-      return dataPoint;
-    });
   }
 }
