@@ -42,18 +42,24 @@ class OpenMeteoProvider {
     }
   }
 
+  ema3(data, property) {
+    const alpha = 2 / (3 + 1); // 0.5
+    const emaValues = [];
+
+    let ema = data[0][property]; // seed with first value
+    emaValues.push(ema);
+
+    for (let i = 1; i < data.length; i++) {
+      ema = alpha * data[i][property] + (1 - alpha) * ema;
+      emaValues.push(ema);
+    }
+    return emaValues;
+  }
+
   processWeatherData(data, forecastType) {
     let processedData = [];
 
     if (data.hourly && data.hourly.time) {
-      // Convert the structure
-      // Hourly :{
-      //    time: array of iso8601 strings,
-      //    temperature_2m: array of floats in celsius,
-      //    precipitation: array of floats in millimeters,
-      //    wind_speed: array of floats in km/h,
-      //    cloud_cover: array of floats in percentage (0-100)}
-
       processedData = data.hourly.time.map((time, index) => {
         if (time < new Date().toISOString()) return null;
 
@@ -78,6 +84,16 @@ class OpenMeteoProvider {
 
     // Delete null values
     processedData = processedData.filter((item) => item !== null);
+
+    // Apply ema3 on processedData[].temperature
+    const temp_ema3 = this.ema3(processedData, "temperature");
+    const wind_ema3 = this.ema3(processedData, "windSpeed");
+
+    // Apply temp_ema3 on processedData structure
+    processedData.forEach((item, index) => {
+      item.temperature = temp_ema3[index];
+      item.windSpeed = wind_ema3[index];
+    });
 
     return {
       data: processedData,

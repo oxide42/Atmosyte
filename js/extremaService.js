@@ -2,9 +2,9 @@ class ExtremaService {
   constructor(settings) {
     this.settings = settings;
     // Base thresholds - will be adjusted per forecast type
-    this.indexDistanceThreshold = 3;
+    this.indexDistanceThreshold = 2;
     this.valueThresholdPct = 0.2;
-    this.valueThresholdValue = 2;
+    this.valueThresholdValue = 1.5;
   }
 
   /**
@@ -129,9 +129,9 @@ class ExtremaService {
     const forecastType = this.settings.getForecastType();
     let indexDistanceThreshold = this.indexDistanceThreshold;
     if (forecastType === "hourly") {
-      indexDistanceThreshold = this.indexDistanceThreshold * 4; // More aggressive filtering for hourly
+      indexDistanceThreshold = this.indexDistanceThreshold * 3; // More aggressive filtering for hourly
     } else if (forecastType === "3-hourly") {
-      indexDistanceThreshold = this.indexDistanceThreshold * 2;
+      indexDistanceThreshold = this.indexDistanceThreshold * 1;
     }
 
     let valueThresholdPct = this.valueThresholdPct;
