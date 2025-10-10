@@ -1,9 +1,4 @@
-class DmiProvider {
-  constructor(settings) {
-    this.settings = settings;
-    this.cookieCache = new Cache();
-  }
-
+class DmiProvider extends Provider {
   async fetchWeatherData(latitude, longitude, forecastType) {
     const apiToken = this.settings.settings.dmiApiToken;
     if (!this.settings.settings.dmiApiToken) {
@@ -70,6 +65,7 @@ class DmiProvider {
     }
 
     processedData.alerts = [];
+    this.smooth(processedData);
 
     return processedData;
   }

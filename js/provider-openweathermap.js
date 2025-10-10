@@ -1,9 +1,4 @@
-class OpenWeatherMapProvider {
-  constructor(settings) {
-    this.settings = settings;
-    this.cookieCache = new Cache();
-  }
-
+class OpenWeatherMapProvider extends Provider {
   async fetchWeatherData(latitude, longitude, forecastType) {
     if (!this.settings.settings.owmApiToken) {
       throw new Error(
@@ -101,6 +96,8 @@ class OpenWeatherMapProvider {
           tags: item.tags || [],
         }))
       : [];
+
+    this.smooth(processedData);
 
     return {
       data: processedData,

@@ -1,9 +1,4 @@
-class OpenMeteoProvider {
-  constructor(settings) {
-    this.settings = settings;
-    this.cookieCache = new Cache();
-  }
-
+class OpenMeteoProvider extends Provider {
   async fetchWeatherData(latitude, longitude, forecastType) {
     const cachedResponce = this.cookieCache.get("provider-openmeteo-response");
     if (cachedResponce) {
@@ -42,20 +37,6 @@ class OpenMeteoProvider {
     }
   }
 
-  ema3(data, property) {
-    const alpha = 2 / (3 + 1); // 0.5
-    const emaValues = [];
-
-    let ema = data[0][property]; // seed with first value
-    emaValues.push(ema);
-
-    for (let i = 1; i < data.length; i++) {
-      ema = alpha * data[i][property] + (1 - alpha) * ema;
-      emaValues.push(ema);
-    }
-    return emaValues;
-  }
-
   processWeatherData(data, forecastType) {
     let processedData = [];
 
@@ -85,15 +66,7 @@ class OpenMeteoProvider {
     // Delete null values
     processedData = processedData.filter((item) => item !== null);
 
-    // Apply ema3 on processedData[].temperature
-    const temp_ema3 = this.ema3(processedData, "temperature");
-    const wind_ema3 = this.ema3(processedData, "windSpeed");
-
-    // Apply temp_ema3 on processedData structure
-    processedData.forEach((item, index) => {
-      item.temperature = temp_ema3[index];
-      item.windSpeed = wind_ema3[index];
-    });
+    this.smooth(processedData);
 
     return {
       data: processedData,
