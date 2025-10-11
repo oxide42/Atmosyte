@@ -161,6 +161,7 @@ function update() {
         max: 5,
         strictMinMax: true,
         autoZoom: false,
+        visible: false,
         renderer: am5xy.AxisRendererY.new(root, {
           opposite: true,
           visible: false,
