@@ -4,7 +4,24 @@ class WeatherChart {
     this.chart = null;
   }
 
+  /*
+function update() {
+  // Log current zoom level
+  var min = yAxis.getPrivate("selectionMin");
+  var max = yAxis.getPrivate("selectionMax");
+
+  // Set up an event that would restore same zoom level to the axis
+  series.events.once("datavalidated", function() {
+    yAxis.zoomToValues(min, max);
+  });
+  // Update data
+  series.data.setAll(data2);
+}
+  */
+
   createChart(weatherData, containerId = "chartContainer") {
+    const self = this;
+
     if (this.chart) {
       this.chart.dispose();
     }
@@ -45,6 +62,25 @@ class WeatherChart {
       [tempSeries, precipSeries, windSeries, sunSeries],
       chartData,
     );
+
+    tempSeries.events.once("datavalidated", function (ev) {
+      const firstDate = new Date(tempSeries.dataItems[0].dataContext.time);
+      // lastDate is firstDate plus two days
+      let delta = 2 * 24 * 60 * 60 * 1000;
+
+      switch (self.settings.getForecastType()) {
+        case "daily":
+          delta = delta * 24;
+          break;
+        case "3-hourly":
+          delta = delta * 3;
+          break;
+      }
+      const lastDate = new Date(firstDate.getTime() + delta);
+
+      ev.target.get("xAxis").zoomToDates(firstDate, lastDate);
+    });
+
     this.setupBullets(
       root,
       tempSeries,
@@ -53,7 +89,6 @@ class WeatherChart {
       precipSeries,
       processedData,
     );
-    this.setupChartEvents(chart, xAxis);
 
     this.chart = root;
   }
@@ -83,15 +118,15 @@ class WeatherChart {
         },
         markUnitChange: true,
         renderer: am5xy.AxisRendererX.new(root, {
-          minGridDistance: 30,
+          minGridDistance: 40,
           opposite: true,
-          maxLabelPosition: 0.99,
-          minLabelPosition: 0.01,
+          maxLabelPosition: 0.95,
+          minLabelPosition: 0.05,
         }),
         zoomX: true,
         zoomY: false,
-        start: 0,
-        end: 0.7,
+        extraMax: 0,
+        extraMin: 0,
       }),
     );
 
@@ -464,14 +499,6 @@ class WeatherChart {
     windSeries.events.once("datavalidated", () => {
       windReady = true;
       tryAddBullets();
-    });
-  }
-
-  setupChartEvents(chart, xAxis) {
-    self = this;
-
-    chart.events.on("ready", () => {
-      xAxis.zoom(0, 0.05);
     });
   }
 
