@@ -1,4 +1,26 @@
 class Cache {
+  static #instance = null;
+
+  constructor() {
+    // Return existing instance if it exists
+    if (Cache.#instance) {
+      return Cache.#instance;
+    }
+    // Store the instance
+    Cache.#instance = this;
+  }
+
+  /**
+   * Get the singleton instance
+   * @returns {Cache} The Cache instance
+   */
+  static getInstance() {
+    if (!Cache.#instance) {
+      Cache.#instance = new Cache();
+    }
+    return Cache.#instance;
+  }
+
   #parse() {
     return Object.fromEntries(
       document.cookie
@@ -226,7 +248,12 @@ class Cache {
 /*
 
 // Usage examples:
-const cache = new Cache();
+// Get the singleton instance (recommended)
+const cache = Cache.getInstance();
+
+// OR use constructor (also returns the same singleton instance)
+const cache2 = new Cache();
+// cache === cache2 (both reference the same instance)
 
 // Single operations
 cache.set("user", "john_doe", 60); // String value
